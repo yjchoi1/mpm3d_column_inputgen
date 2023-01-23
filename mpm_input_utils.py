@@ -61,7 +61,7 @@ def particle_ranges(num_particle_groups: int,
     pranges = particle_range_gen(domain=restricted_domains, particle_length=particle_length, randomize_size=randomize_size)
     ok_objs.append(pranges)
 
-    # generate new cube range and test if it overlaps
+    # generate new cube range and test if it overlaps with the existing cubes
     while len(ok_objs) < num_particle_groups:
 
         # pranges = []
@@ -112,7 +112,7 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
     boundary_friction = np.tan((1 * phi / 2) * (np.pi / 180))
     # analysis parameters
     dt = 0.00001
-    nsteps = 125000
+    nsteps = 105000
     output_step_interval = 250
 
 
@@ -240,7 +240,7 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
 
     # Other simulation parameters (gravity, number of iterations, time step, ..):
     sim.set_gravity([0, 0, -9.81])
-    sim.set_analysis_parameters(dt=dt, nsteps=nsteps, output_step_interval=output_step_interval)
+    sim.set_analysis_parameters(dt=dt, nsteps=nsteps, mpm_scheme='usf', output_step_interval=output_step_interval)
 
     # write files
     sim.write_input_file()
@@ -312,54 +312,43 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
     os.replace(f"./{save_name}/sim_metadata.json", f"./{save_name}/{save_name}/sim_metadata.json")
     os.replace(f"./{save_name}/particles.txt", f"./{save_name}/{save_name}/particles.txt")
 
+    # add input file vtk save
+    f = open(f"./{save_name}/input_file.json")
+    input_file = json.load(f)
+    input_file["post_processing"]["vtk"] = ["stresses", "displacements"]
+    with open(f'./{save_name}/input_file.json', 'w') as f:
+        json.dump(input_file, f,  indent=4)
+
     # input file without initial velocity constraints to resume
     f = open(f"./{save_name}/input_file.json")
     input_file = json.load(f)
     input_file["analysis"]["resume"] = {
-        "resume": False,
+        "resume": True,
         "uuid": f"{save_name}",
         "step": 0
     }
+    # additional edit
     del input_file["mesh"]["boundary_conditions"]["particles_velocity_constraints"]
     with open(f'./{save_name}/input_file_resume.json', 'w') as f:
         json.dump(input_file, f,  indent=4)
 
 
-# #
-# import random
-# import bpy
-#
-# obj_ctr = []
-# obj_radius = 1
-# # one object must be created outside the loop for data structure to be available for testing
-# x = random.randint(-5, 4)
-# y = random.randint(-2, 7)
-# z = random.randint(3, 10)
-# obj_ctr.append((x,y,z))
-#
-# #while len(obj_ctr) < 10:
-# for a in range(10):
-#     test_x = False
-#     test_y = False
-#     test_z = False
-#     x = random.randint(-5, 4)
-#     y = random.randint(-2, 7)
-#     z = random.randint(3, 10)
-#     for test in obj_ctr: #verify the new randoms will not allow collision
-#         if abs(test[0] - x) < obj_radius * 2:
-#             test_x = False
-#         else:
-#             test_x = True
-#         if abs(test[1] - y) < obj_radius * 2:
-#             test_y = False
-#         else:
-#             test_y = True
-#         if abs(test[2] - y) < obj_radius * 2:
-#             test_z = False
-#         else:
-#             test_z = True
-#     if (test_x and test_y and test_z):
-#         obj_ctr.append((x,y,z))
-#
-# for obj in obj_ctr:
-#     bpy.ops.mesh.primitive_cube_add(radius = obj_radius, location = obj)
+    #
+    # ## debug
+    # # read entity set
+    # f = open(f"./{save_name}/{save_name}/entity_sets.json")
+    # entity_sets = json.load(f)
+    # print(entity_sets)
+    #
+    # nodeid_pycbg = []
+    # for pset_dict in entity_sets['node_sets']:
+    #     nodeid_pycbg.append(pset_dict["set"])
+    #
+    # nodes = np.array(sim.mesh.nodes)
+    # x_left = np.where(nodes[:, 0] == 0)
+    # x_right = np.where(nodes[:, 0] == 1)
+    # y_left = np.where(nodes[:, 1] == 0)
+    # y_right = np.where(nodes[:, 1] == 1)
+    # z_left = np.where(nodes[:, 2] == 0)
+    # z_right = np.where(nodes[:, 2] == 1)
+    #

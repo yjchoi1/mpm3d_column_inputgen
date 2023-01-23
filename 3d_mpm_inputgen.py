@@ -1,32 +1,29 @@
-from pycbg import preprocessing as mpminput
 import numpy as np
-from matplotlib import pyplot as plt
-import json
-import math
-import os
 import mpm_input_utils as inputgen
 # %matplotlib qt
 
 # inputs
-trajectory_names = [
-    "3d-sand0", "3d-sand1", "3d-sand2", "3d-sand3", "3d-sand4", "3d-sand5", "3d-sand6", "3d-sand7"]
-num_particle_groups = 2
-domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]  # simulation domain. Particle group are generated inside this domain
-particle_length = [0.4, 0.4, 0.4]  # dimension of particle group
+trajectory_names = []
+for i in range(0, 5):
+    trajectory_names.append(f"3dsand_test{i}")
+num_particle_groups = 1
+simulation_domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]  # simulation domain. Particle group are generated inside this domain
+particle_domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 0.7]]  # limit where the particle groups are generated.
+particle_length = [0.30, 0.30, 0.30]  # dimension of particle group
 vel_bound = [-2, 2]  # lower and upper limits for random velocity vector for a particle group
-cellsize = 0.1
+cellsize = 0.08
 
 
 trajectory_info = {}
     # trajectory_info[f"{trajectory_name}"] = {}
 for trajectory_name in trajectory_names:
     trajectory_info[f"{trajectory_name}"] = {
-        'domain': domain,
+        'domain': simulation_domain,
         'particle_info': {}
     }
     particle_ranges = inputgen.particle_ranges(
         num_particle_groups=num_particle_groups,
-        domain=domain,
+        domain=particle_domain,
         particle_length=particle_length,
         boundary_offset=cellsize,
         dims=3
