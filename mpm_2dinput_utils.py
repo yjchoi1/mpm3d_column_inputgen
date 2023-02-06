@@ -16,7 +16,6 @@ class Column2DSimulation:
                  npart_perdim_percell,
                  randomness,
                  wall_friction,
-                 analysis: dict,
                  post_processing: dict):
         """
         Initiate simulation
@@ -31,7 +30,6 @@ class Column2DSimulation:
         self.randomness = randomness
         self.wall_friction = wall_friction
         self.dims = 2
-        self.analysis = analysis
         self.post_processing = post_processing
 
     def create_mesh(self):
@@ -238,12 +236,12 @@ class Column2DSimulation:
         bound_node_id = [left_bound_node_id, right_bound_node_id, bottom_bound_node_id, upper_bound_node_id]
 
         for i in range(4):
-            entity_sets["node_sets"].append({"id": f"{i}", "set": bound_node_id[i]})
+            entity_sets["node_sets"].append({"id": i, "set": bound_node_id[i]})
 
         # particle sets
         for i, (group_id, pinfo) in enumerate(particle_info.items()):
             entity_sets["particle_sets"].append(
-                {"id": f"{i}", "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
+                {"id": i, "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
         print(f"Make `entity_sets.json`at {save_path}")
         with open(f"{save_path}/entity_sets.json", "w") as f:
             json.dump(entity_sets, f, indent=2)
@@ -252,7 +250,8 @@ class Column2DSimulation:
     def mpm_inputfile_gen(self,
                           save_path: str,
                           material_types: list,
-                          particle_info: dict
+                          particle_info: dict,
+                          analysis: dict
                           ):
         # initiate json entry
         mpm_json = {}
@@ -375,7 +374,7 @@ class Column2DSimulation:
         }
 
         ## Analysis
-        mpm_json["analysis"] = self.analysis
+        mpm_json["analysis"] = analysis
 
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
@@ -386,42 +385,63 @@ class Column2DSimulation:
         f.close()
 
 
-def make_n_box_ranges(num_particle_groups, size, domain, size_random_level, boundary_offset=0.0, dimensions=2):
+import random
+
+def make_n_box_ranges(num_particle_groups, size, domain, size_random_level, boundary_offset, dimensions=2):
     """
-    Generates n number of non-overlapping box ranges in `dimensions` dimensions.
+    Generates n non-overlapping box ranges in the given domain.
 
-    Arguments:
-    - num_particle_groups (int): number of box ranges to generate
-    - size (list): size of each box in each dimension
-    - domain (list of tuples): domain ranges in each dimension
-    - size_random_level (float): random level to modify box size
-    - boundary_offset (float): offset from the boundary for every dimension
-    - dimensions (int, optional): number of dimensions to generate box ranges in, default is 2
+    Parameters
+    ----------
+    num_particle_groups: int
+        The number of box ranges to generate
+    size: List of float
+        The size of each box range in each dimension
+    domain: List of tuples
+        The domain in which to generate the box ranges, represented as a list of tuples
+        where each tuple contains the start and end of the domain in each dimension
+    size_random_level: float
+        The level of randomization to apply to each box size
+    boundary_offset: List of float
+        The distance from the boundary to be maintained for each dimension
+    dimensions: int, optional (default=2)
+        The number of dimensions in the domain
 
-    Returns:
-    - boxes (list of list of tuples): a list of `num_particle_groups` box ranges, where each box range is
-      represented by `dimensions` number of tuples each representing start and end range in that dimension
-
+    Returns
+    -------
+    boxes: List of lists
+        A list of generated box ranges, represented as a list of lists, where each inner list
+        contains tuples representing the start and end of the box range in each dimension.
     """
-    box_ranges = []
-    while len(box_ranges) < num_particle_groups:
+    boxes = []
+    attempt = 0
+    max_attempts = 100
+    # random_factor = np.random.uniform(1 - size_random_level, 1 + size_random_level, 1)
+    # size = [s * random_factor for s in size]
+    while len(boxes) < num_particle_groups:
+        random_size = size * np.random.uniform(1 - size_random_level, 1 + size_random_level, 1)
         box = []
         for i in range(dimensions):
-            randomized_size = size[i] * np.random.uniform(1 - size_random_level, 1 + size_random_level, 1)
             start = random.uniform(
-                domain[i][0] + boundary_offset, domain[i][1] - boundary_offset - randomized_size)
-            end = start + randomized_size
+                domain[i][0]+boundary_offset[i], domain[i][1]-boundary_offset[i] - random_size[i])
+            end = start + random_size[i]
             box.append((start, end))
         overlap = False
-        for existing_box in box_ranges:
+        for existing_box in boxes:
+            overlap_count = 0
             for i in range(dimensions):
                 if (existing_box[i][0] < box[i][1]) and (box[i][0] < existing_box[i][1]):
+                    overlap_count += 1
+                if overlap_count >= 2:
                     overlap = True
                     break
             if overlap:
                 break
         if not overlap:
-            box_ranges.append(box)
-    return box_ranges
+            boxes.append(box)
+        attempt += 1
+        if attempt > max_attempts:
+            raise Exception(f"Could not generate non-overlapping boxes after {max_attempts} attempts")
+    return boxes
 
     # TODO: Geostatic particle stress condition

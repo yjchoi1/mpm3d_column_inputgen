@@ -22,7 +22,7 @@ def main(_):
     # define materials
     material0 = {
         "id": 0,
-        "type": "MohrCoulomb3D",
+        "type": "MohrCoulomb2D",
         "density": 1800,
         "youngs_modulus": 2000000.0,
         "poisson_ratio": 0.3,
@@ -40,7 +40,7 @@ def main(_):
     material_id = [0, 0, 0]  # material id of each particle group
     # (maybe make a dict named `trajectory_info` with `simulation_domain`)
     if random_gen is True:
-        particle_length = [0.2, 0.2]  # length of cube for x, y dir
+        particle_length = [0.25, 0.25]  # length of cube for x, y dir
         particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
         range_randomness = 0.2
         vel_bound = [-2.0, 2.0]
@@ -58,6 +58,24 @@ def main(_):
         "damping": {
             "type": "Cundall",
             "damping_factor": 0.05
+        },
+        "velocity_update": False,
+        "nsteps": 105000,
+        "uuid": "3dsand_test0"
+    }
+    analysis_resume = {
+        "type": "MPMExplicit2D",
+        "mpm_scheme": "usf",
+        "locate_particles": False,
+        "dt": 1e-05,
+        "damping": {
+            "type": "Cundall",
+            "damping_factor": 0.05
+        },
+        "resume": {
+            "resume": True,
+            "uuid": "3d-sand18",
+            "step": 0
         },
         "velocity_update": False,
         "nsteps": 105000,
@@ -84,11 +102,12 @@ def main(_):
         # particle config for each simulation
         metadata[f"simulation{i}"]["particle"] = {}
         # random gen for ranges where particles are generated
-        particle_ranges = make_n_box_ranges(num_particle_groups=num_particle_groups,
-                  size=particle_length,
-                  domain=particle_gen_candidate_area,
-                  boundary_offset=cellsize,
-                  size_random_level=range_randomness)
+        particle_ranges = make_n_box_ranges(
+            num_particle_groups=num_particle_groups,
+            size=particle_length,
+            domain=particle_gen_candidate_area,
+            size_random_level=range_randomness,
+            boundary_offset=[cellsize, cellsize])
 
         # assign the generated ranges, vel, and materials for each particle group
         for g in range(num_particle_groups):
@@ -106,7 +125,6 @@ def main(_):
                              npart_perdim_percell=nparticle_perdim_percell,
                              randomness=particle_randomness,
                              wall_friction=wall_friction,
-                             analysis=analysis,
                              post_processing=post_processing)
 
     # gen mpm inputs
@@ -129,7 +147,15 @@ def main(_):
         sim.mpm_inputfile_gen(
             save_path=f"{save_path}/{simulation['name']}",
             material_types=[material0],
-            particle_info=particle_info)
+            particle_info=particle_info,
+            analysis=analysis)
+
+        # write mpm.json
+        sim.mpm_inputfile_gen(
+            save_path=f"{save_path}/{simulation['name']}",
+            material_types=[material0],
+            particle_info=particle_info,
+            analysis=analysis_resume)
 
 if __name__ == '__main__':
     app.run(main)
