@@ -84,20 +84,19 @@ def main(_):
         # particle config for each simulation
         metadata[f"simulation{i}"]["particle"] = {}
         # random gen for ranges where particles are generated
-        if random_gen is True:
-            particle_ranges = make_n_box_ranges(num_particle_groups=num_particle_groups,
-                      size=particle_length,
-                      domain=particle_gen_candidate_area,
-                      boundary_offset=cellsize,
-                      size_random_level=range_randomness)
+        particle_ranges = make_n_box_ranges(num_particle_groups=num_particle_groups,
+                  size=particle_length,
+                  domain=particle_gen_candidate_area,
+                  boundary_offset=cellsize,
+                  size_random_level=range_randomness)
 
-            # assign the generated ranges, vel, and materials for each particle group
-            for g in range(num_particle_groups):
-                metadata[f"simulation{i}"]["particle"][f"group{g}"] = {
-                    "particle_domain": particle_ranges[g],
-                    "material_id": material_id[g],
-                    "particle_vel":  [vel for vel in np.random.uniform(vel_bound[0], vel_bound[1], 2)]
-                }
+        # assign the generated ranges, vel, and materials for each particle group
+        for g in range(num_particle_groups):
+            metadata[f"simulation{i}"]["particle"][f"group{g}"] = {
+                "particle_domain": particle_ranges[g],
+                "material_id": material_id[g],
+                "particle_vel":  [vel for vel in np.random.uniform(vel_bound[0], vel_bound[1], 2)]
+            }
 
 
 
