@@ -2,26 +2,11 @@ import numpy as np
 import math
 import os
 import json
+import random
 import argparse
 from matplotlib import pyplot as plt
 import sys
 from absl import app
-
-# inputs
-# trajectory_names = []  # Path name to create mpm input files and results
-# for i in range(0, 5):
-#     trajectory_names.append(f"2dsand_train{i}")
-# num_particle_groups = 2
-# simulation_domain = [[0.0, 1.0], [0.0, 1.0]]  # simulation domain. Particle group are generated inside this domain
-# cellsize = 0.025
-# particle_domain = [[0.0, 1.0], [0.0, 0.7]]  # limit where the particle groups are generated.
-# particle_length = [0.30, 0.30]  # dimension of particle group
-# vel_bound = [-2, 2]  # lower and upper limits for random velocity vector for a particle group
-# npart_perdim_percell = 4
-# randomness = 0.9
-# k0 = 0.5
-# density = 1800
-
 
 class Column2DSimulation:
 
@@ -124,83 +109,6 @@ class Column2DSimulation:
             ).replace(' [', '').replace('[', '').replace(']', '')
         )
         f.close()
-
-#%%
-
-
-    def particle_ranges(self,
-                        particle_domain: list,
-                        num_particle_groups: int,
-                        particle_length: list,
-                        boundary_offset: float,
-                        range_randomness: float):
-        """
-        Make particle range (i.e., [[xmin, xmax], [ymin, ymax]]) within which particles are located-
-        in non-overlapping places
-        :param particle_domain: domain range where particle groups are generated (e.g., [[0.0, 1.0], [0.0, 0.7]])
-        :param num_particle_groups: number of particle group ranges to generate
-        :param particle_length: length of each dimension for the particle groups (i.e., [x_length, y_length])
-        :param boundary_offset: offset value from the simulation boundaries to restrict particle group generating area
-        (in order for the particles not to be too close to the boundary)
-        :param range_randomness: extent that randomizes the length of the particle group
-        :return: a list including ranges of particle groups
-        (e.g., [[[xmin, xmax], [ymin, ymax]], [xmin, xmax], [ymin, ymax]], ...).
-        These ranges does not overlap each other.
-        """
-
-        dims = 2
-
-        def overlap(a, b):
-            return a[0] <= b[0] <= a[1] or b[0] <= a[0] <= b[1]
-
-        def particle_range_gen(particle_length=None):
-            """
-            Generate particle group range [[xmin, xmax], [ymin, ymax]] in a specified restricted area
-            :return:
-            Particle group range [[xmin, xmax], [ymin, ymax]]
-            """
-
-            # Restrict the domain where particles are generated with the amount of specified offset from actual domain
-            if particle_length is None:
-                particle_length = particle_length
-            restricted_pdomains = []
-            for i, bound in enumerate(particle_domain):
-                restricted_pmin = bound[0] + boundary_offset
-                restricted_pmax = bound[1] - boundary_offset
-                restricted_pdomains.append([restricted_pmin, restricted_pmax])
-
-            # Generate a list of particle ranges (i.e., [[xmin, xman], [ymin, ymax]]) to generate particle groups -
-            # in a restricted domain
-            particle_length = particle_length * np.random.uniform(1-range_randomness, 1+range_randomness, 1)
-            pranges = []
-            for i, bound in enumerate(restricted_pdomains):
-                pmin = np.round(np.random.uniform(bound[0], bound[1] - particle_length[i]), 2)
-                pmax = pmin + particle_length[i]
-                pranges.append([pmin, pmax])
-
-            return pranges
-
-        # make 3d particle ranges not to overlap each other.
-        # Start with initiating the first cube object for testing
-        ok_objs_ranges = []  # to save particle object ranges that pass the overlapping test
-        pranges = particle_range_gen(particle_length=particle_length)
-        ok_objs_ranges.append(pranges)
-
-        # generate new cube range and test if it overlaps with the existing cubes
-        while len(ok_objs_ranges) < num_particle_groups:
-            # new candidate
-            pranges = particle_range_gen(particle_length=particle_length)
-            # test if new candidate overlaps existing range
-            for test in ok_objs_ranges:
-                test_result = [overlap(test[i], pranges[i]) for i in range(dims)]
-            if (test_result[0] and test_result[1]):
-                pass
-            else:
-                ok_objs_ranges.append(pranges)
-
-        return ok_objs_ranges
-
-
 
     def create_particle(self, particle_meta_info: dict):
         """
@@ -333,11 +241,10 @@ class Column2DSimulation:
             entity_sets["node_sets"].append({"id": f"{i}", "set": bound_node_id[i]})
 
         # particle sets
-
         for i, (group_id, pinfo) in enumerate(particle_info.items()):
             entity_sets["particle_sets"].append(
                 {"id": f"{i}", "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
-        print("Make `entity_sets.json`")
+        print(f"Make `entity_sets.json`at {save_path}")
         with open(f"{save_path}/entity_sets.json", "w") as f:
             json.dump(entity_sets, f, indent=2)
         f.close()
@@ -473,128 +380,48 @@ class Column2DSimulation:
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
 
-        print("Make `mpm_input.json`")
+        print(f"Make `mpm_input.json` at {save_path}")
         with open(f"{save_path}/mpm_input.json", "w") as f:
             json.dump(mpm_json, f, indent=2)
         f.close()
 
 
+def make_n_box_ranges(num_particle_groups, size, domain, size_random_level, boundary_offset=0.0, dimensions=2):
+    """
+    Generates n number of non-overlapping box ranges in `dimensions` dimensions.
 
+    Arguments:
+    - num_particle_groups (int): number of box ranges to generate
+    - size (list): size of each box in each dimension
+    - domain (list of tuples): domain ranges in each dimension
+    - size_random_level (float): random level to modify box size
+    - boundary_offset (float): offset from the boundary for every dimension
+    - dimensions (int, optional): number of dimensions to generate box ranges in, default is 2
 
-def main(_):
+    Returns:
+    - boxes (list of list of tuples): a list of `num_particle_groups` box ranges, where each box range is
+      represented by `dimensions` number of tuples each representing start and end range in that dimension
 
-    save_path = "mpm_inputs"
-    trajectory_names = ["sand3d-0", "sand3d-1"]
-    simulation_domain = [[0.0, 1.0], [0.0, 1.0]]
-    particle_domain = [[0.0, 1.0], [0.0, 0.7]]
-    cellsize = 0.025
-    nparticle_perdim_percell = 4
-    particle_length = [0.3, 0.3]
-    randomness = 0.8
-    num_particle_groups = len(trajectory_names)
-    material_id = [0, 0]  #  material id of each particle group
-    vel_bound = [-2.0, 2.0]
-    # define materials
-    material0 = {
-        "id": 0,
-        "type": "MohrCoulomb3D",
-        "density": 1800,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 30,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 30,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
-    }
-    analysis = {
-        "type": "MPMExplicit2D",
-        "mpm_scheme": "usf",
-        "locate_particles": False,
-        "dt": 1e-05,
-        "damping": {
-            "type": "Cundall",
-            "damping_factor": 0.05
-        },
-        "velocity_update": False,
-        "nsteps": 105000,
-        "uuid": "3dsand_test0"
-    }
-    post_processing = {
-        "path": "results/",
-        "output_steps": 250,
-        "vtk": ["stresses", "displacements"]
-    }
+    """
+    box_ranges = []
+    while len(box_ranges) < num_particle_groups:
+        box = []
+        for i in range(dimensions):
+            randomized_size = size[i] * np.random.uniform(1 - size_random_level, 1 + size_random_level, 1)
+            start = random.uniform(
+                domain[i][0] + boundary_offset, domain[i][1] - boundary_offset - randomized_size)
+            end = start + randomized_size
+            box.append((start, end))
+        overlap = False
+        for existing_box in box_ranges:
+            for i in range(dimensions):
+                if (existing_box[i][0] < box[i][1]) and (box[i][0] < existing_box[i][1]):
+                    overlap = True
+                    break
+            if overlap:
+                break
+        if not overlap:
+            box_ranges.append(box)
+    return box_ranges
 
-    # init
-    sim = Column2DSimulation(simulation_domain=simulation_domain,
-                             cellsize=cellsize,
-                             npart_perdim_percell=nparticle_perdim_percell,
-                             randomness=randomness,
-                             wall_friction=0.27,
-                             analysis=analysis,
-                             post_processing=post_processing)
-
-    # gen input
-    for trajectory_name in trajectory_names:
-        # mesh
-        mesh_info = sim.create_mesh()
-        sim.write_mesh_file(mesh_info, save_path=f"{save_path}/{trajectory_name}")
-
-        # particle
-        particle_meta_info = {}
-        particle_ranges = sim.particle_ranges(
-            particle_domain=particle_domain,
-            num_particle_groups=num_particle_groups,
-            particle_length=particle_length,
-            boundary_offset=cellsize,
-            range_randomness=0.2
-        )
-        for i in range(num_particle_groups):
-            particle_meta_info[f"group{i}"] = {
-                "particle_domain": particle_ranges[i],
-                "material_id": material_id[i],
-                "particle_vel":  [vel for vel in np.random.uniform(vel_bound[0], vel_bound[1], 2)]
-            }
-        particle_info = sim.create_particle(particle_meta_info)
-        # write particle
-        sim.write_particle_file(particle_info, save_path=f"{save_path}/{trajectory_name}")
-        sim.write_entity(save_path=f"{save_path}/{trajectory_name}",
-                     mesh_info=mesh_info,
-                     particle_info=particle_info)
-
-
-
-        # write mpm.json
-        sim.mpm_inputfile_gen(
-            save_path=f"{save_path}/{trajectory_name}",
-            material_types=[material0],
-            particle_info=particle_info)
-    a = 5
-
-
-    # particle
-    autogen = False
-    if autogen:
-        pass
-        # pinfo = create_particle_group()
-        # create_particle_group()
-        # write_particle()
-    else:
-        particle_info = {
-            "group1":
-                {"particle_domain": [[0.1, 0.3], [0.1, 0.3]],
-                 "initial_velocity": [0.3, 0.7]},
-            "group2":
-                {"particle_domain": [[0.1, 0.4], [0.1, 0.4]],
-                 "initial_velocity": [0.2, 0.5]}
-            # ...
-        }
-
-if __name__ == '__main__':
-    app.run(main)
+    # TODO: Geostatic particle stress condition

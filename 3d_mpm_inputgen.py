@@ -1,15 +1,15 @@
 import numpy as np
-import mpm_input_utils as inputgen
+import mpm_3dinput_utils as inputgen
 # %matplotlib qt
 
 # inputs
 trajectory_names = []
 for i in range(0, 5):
     trajectory_names.append(f"3dsand_test{i}")
-num_particle_groups = 1
-simulation_domain = [[0.0, 1.0], [0.0, 1.0]]  # simulation domain. Particle group are generated inside this domain
-particle_domain = [[0.0, 1.0], [0.0, 1.0]]  # limit where the particle groups are generated.
-particle_length = [0.30, 0.30]  # dimension of particle group
+num_particle_groups = 2
+simulation_domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]  # simulation domain. Particle group are generated inside this domain
+particle_domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 0.7]]  # limit where the particle groups are generated.
+particle_length = [0.30, 0.30, 0.30]  # dimension of particle group
 vel_bound = [-2, 2]  # lower and upper limits for random velocity vector for a particle group
 cellsize = 0.08
 
