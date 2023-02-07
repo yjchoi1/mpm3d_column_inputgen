@@ -40,7 +40,7 @@ def main(_):
     material_id = [0, 0, 0]  # material id of each particle group
     # (maybe make a dict named `trajectory_info` with `simulation_domain`)
     if random_gen is True:
-        particle_length = [0.25, 0.25]  # length of cube for x, y dir
+        particle_length = [0.20, 0.20]  # length of cube for x, y dir
         particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
         range_randomness = 0.2
         vel_bound = [-2.0, 2.0]
@@ -95,7 +95,9 @@ def main(_):
             size=particle_length,
             domain=particle_gen_candidate_area,
             size_random_level=range_randomness,
-            boundary_offset=[cellsize, cellsize])
+            boundary_offset=[cellsize, cellsize],
+            min_interval=cellsize/2
+        )
 
         # assign the generated ranges, vel, and materials for each particle group
         for g in range(num_particle_groups):
