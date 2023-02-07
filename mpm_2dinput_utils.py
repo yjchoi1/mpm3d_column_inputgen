@@ -251,7 +251,8 @@ class Column2DSimulation:
                           save_path: str,
                           material_types: list,
                           particle_info: dict,
-                          analysis: dict
+                          analysis: dict,
+                          resume=False
                           ):
         # initiate json entry
         mpm_json = {}
@@ -271,7 +272,7 @@ class Column2DSimulation:
         }
         # mpm_json["mesh"]["boundary_condition"] = {}
         # velocity constraints for boundaries
-        mpm_json["mesh"]["boundary_condition"]["velocity_constraints"] = [
+        mpm_json["mesh"]["boundary_conditions"]["velocity_constraints"] = [
             {
                 "nset_id": 0,  # left bound
                 "dir": 0,
@@ -375,13 +376,19 @@ class Column2DSimulation:
 
         ## Analysis
         mpm_json["analysis"] = analysis
+        if resume:
+            mpm_json["analysis"]["resume"]["resume"] = True
 
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
 
         print(f"Make `mpm_input.json` at {save_path}")
-        with open(f"{save_path}/mpm_input.json", "w") as f:
-            json.dump(mpm_json, f, indent=2)
+        if resume:
+            with open(f"{save_path}/mpm_input_resume.json", "w") as f:
+                json.dump(mpm_json, f, indent=2)
+        else:
+            with open(f"{save_path}/mpm_input.json", "w") as f:
+                json.dump(mpm_json, f, indent=2)
         f.close()
 
 
