@@ -8,6 +8,11 @@ from matplotlib import pyplot as plt
 import sys
 from absl import app
 
+
+# TODO: save metadata to each mpm simulation folder
+# TODO: initial config figure text output style improvement
+# TODO: Geostatic particle stress condition
+
 class Column2DSimulation:
 
     def __init__(self,
@@ -251,7 +256,8 @@ class Column2DSimulation:
                           save_path: str,
                           material_types: list,
                           particle_info: dict,
-                          analysis: dict
+                          analysis: dict,
+                          resume=False
                           ):
         # initiate json entry
         mpm_json = {}
@@ -267,11 +273,11 @@ class Column2DSimulation:
             "check_duplicates": True,
             "io_type": "Ascii2D",
             "node_type": "N2D",
-            "boundary_condition": {}
+            "boundary_conditions": {}
         }
         # mpm_json["mesh"]["boundary_condition"] = {}
         # velocity constraints for boundaries
-        mpm_json["mesh"]["boundary_condition"]["velocity_constraints"] = [
+        mpm_json["mesh"]["boundary_conditions"]["velocity_constraints"] = [
             {
                 "nset_id": 0,  # left bound
                 "dir": 0,
@@ -294,7 +300,7 @@ class Column2DSimulation:
             }
         ]
         # friction constraints for basal frictions
-        mpm_json["mesh"]["boundary_condition"]["friction_constraints"] = [
+        mpm_json["mesh"]["boundary_conditions"]["friction_constraints"] = [
             {
                 "nset_id": 0,  # left bound
                 "dir": 0,
@@ -321,20 +327,20 @@ class Column2DSimulation:
             }
         ]
         # particle initial velocity constraints
-        mpm_json["mesh"]["boundary_condition"]["particles_velocity_constraints"] = []
+        mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"] = []
         for i, pinfo in enumerate(particle_info.values()):
             # x_vel constraints
-            mpm_json["mesh"]["boundary_condition"]["particles_velocity_constraints"].append(
+            mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
                 {
-                    "pset_id": f"{i}",
+                    "pset_id": i,
                     "dir": 0,
                     "velocity": pinfo["particle_vel"][0]
                 }
             )
             # y_vel constraints
-            mpm_json["mesh"]["boundary_condition"]["particles_velocity_constraints"].append(
+            mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
                 {
-                    "pset_id": f"{i}",
+                    "pset_id": i,
                     "dir": 1,
                     "velocity": pinfo["particle_vel"][1]
                 }
@@ -375,13 +381,19 @@ class Column2DSimulation:
 
         ## Analysis
         mpm_json["analysis"] = analysis
+        if resume:
+            mpm_json["analysis"]["resume"]["resume"] = True
 
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
 
         print(f"Make `mpm_input.json` at {save_path}")
-        with open(f"{save_path}/mpm_input.json", "w") as f:
-            json.dump(mpm_json, f, indent=2)
+        if resume:
+            with open(f"{save_path}/mpm_input_resume.json", "w") as f:
+                json.dump(mpm_json, f, indent=2)
+        else:
+            with open(f"{save_path}/mpm_input.json", "w") as f:
+                json.dump(mpm_json, f, indent=2)
         f.close()
 
 
@@ -443,5 +455,3 @@ def make_n_box_ranges(num_particle_groups, size, domain, size_random_level, boun
         if attempt > max_attempts:
             raise Exception(f"Could not generate non-overlapping boxes after {max_attempts} attempts")
     return boxes
-
-    # TODO: Geostatic particle stress condition

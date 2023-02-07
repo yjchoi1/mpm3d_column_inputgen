@@ -11,7 +11,7 @@ from absl import app
 def main(_):
     random_gen = True
     save_path = "mpm_inputs"
-    trajectory_names = ["sand3d-0", "sand3d-1"]
+    trajectory_names = ["sand2d-0", "sand2d-1"]
     simulation_domain = [[0.0, 1.0], [0.0, 1.0]]
     cellsize = 0.025
     nparticle_perdim_percell = 4
@@ -59,27 +59,15 @@ def main(_):
             "type": "Cundall",
             "damping_factor": 0.05
         },
-        "velocity_update": False,
-        "nsteps": 105000,
-        "uuid": "3dsand_test0"
-    }
-    analysis_resume = {
-        "type": "MPMExplicit2D",
-        "mpm_scheme": "usf",
-        "locate_particles": False,
-        "dt": 1e-05,
-        "damping": {
-            "type": "Cundall",
-            "damping_factor": 0.05
-        },
         "resume": {
-            "resume": True,
-            "uuid": "3d-sand18",
+            "resume": False,
+            "uuid": "2dsand",
             "step": 0
         },
         "velocity_update": False,
         "nsteps": 105000,
-        "uuid": "3dsand_test0"
+        "uuid": "2dsand"
+
     }
     post_processing = {
         "path": "results/",
@@ -149,13 +137,13 @@ def main(_):
             material_types=[material0],
             particle_info=particle_info,
             analysis=analysis)
-
         # write mpm.json
         sim.mpm_inputfile_gen(
             save_path=f"{save_path}/{simulation['name']}",
             material_types=[material0],
             particle_info=particle_info,
-            analysis=analysis_resume)
+            analysis=analysis,
+            resume=True)
 
 if __name__ == '__main__':
     app.run(main)
