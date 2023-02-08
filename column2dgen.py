@@ -14,6 +14,7 @@ def main(_):
     trajectory_names = ["sand2d-0", "sand2d-1"]
     simulation_domain = [[0.0, 1.0], [0.0, 1.0]]
     cellsize = 0.025
+    outer_cell_thickness = cellsize/4
     nparticle_perdim_percell = 4
     particle_randomness = 0.8
     wall_friction = 0.27
@@ -112,6 +113,7 @@ def main(_):
     # init
     sim = Column2DSimulation(simulation_domain=simulation_domain,
                              cellsize=cellsize,
+                             outer_cell_thickness=outer_cell_thickness,
                              npart_perdim_percell=nparticle_perdim_percell,
                              randomness=particle_randomness,
                              wall_friction=wall_friction,
