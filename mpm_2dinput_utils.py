@@ -18,6 +18,7 @@ class Column2DSimulation:
     def __init__(self,
                  simulation_domain,
                  cellsize,
+                 outer_cell_thickness,
                  npart_perdim_percell,
                  randomness,
                  wall_friction,
@@ -26,11 +27,13 @@ class Column2DSimulation:
         Initiate simulation
         :param simulation_domain: Simulation domain (boundary)
         :param cellsize: Size of width and height of each cell for the mesh generation
+        :param outer_cell_thickness: Thickness of the outermost cells
         :param npart_perdim_percell: number of particles to locate in each dimension of the cell
         :param randomness: uniform random distribution parameter for randomly perturb the particles
         """
         self.simulation_domain = simulation_domain
         self.cellsize = cellsize
+        self.outer_cell_thickness = outer_cell_thickness
         self.npart_perdim_percell = npart_perdim_percell
         self.randomness = randomness
         self.wall_friction = wall_friction
@@ -44,8 +47,16 @@ class Column2DSimulation:
         y_bounds = self.simulation_domain[1]
 
         # Generate mesh node coordinates
-        xs = np.arange(x_bounds[0], x_bounds[1] + self.cellsize, self.cellsize)
-        ys = np.arange(y_bounds[0], y_bounds[1] + self.cellsize, self.cellsize)
+        # Generate mesh node coordinates
+        xs = np.concatenate((np.array([x_bounds[0]]),
+                             np.arange(x_bounds[0]+self.outer_cell_thickness, x_bounds[1]-self.outer_cell_thickness, self.cellsize),
+                             np.array([x_bounds[1]-self.outer_cell_thickness, x_bounds[1]])
+                             ))
+        ys = np.concatenate((np.array([y_bounds[0]]),
+                             np.arange(y_bounds[0]+self.outer_cell_thickness, y_bounds[1]-self.outer_cell_thickness, self.cellsize),
+                             np.array([y_bounds[1]-self.outer_cell_thickness, y_bounds[1]])
+                             ))
+
         xy = []
         for y in ys:
             for x in xs:
