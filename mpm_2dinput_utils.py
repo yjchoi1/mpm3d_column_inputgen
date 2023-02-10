@@ -18,7 +18,6 @@ class Column2DSimulation:
     def __init__(self,
                  simulation_domain,
                  cellsize,
-                 outer_cell_thickness,
                  npart_perdim_percell,
                  randomness,
                  wall_friction,
@@ -27,7 +26,6 @@ class Column2DSimulation:
         Initiate simulation
         :param simulation_domain: Simulation domain (boundary)
         :param cellsize: Size of width and height of each cell for the mesh generation
-        :param outer_cell_thickness: Thickness of the outermost cells
         :param npart_perdim_percell: number of particles to locate in each dimension of the cell
         :param randomness: uniform random distribution parameter for randomly perturb the particles
         """
