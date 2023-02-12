@@ -3,7 +3,7 @@ import json
 import numpy as np
 import random
 from absl import app
-
+import os
 import box_ranges_gen
 from mpm_2dinput_utils import Column2DSimulation
 
@@ -11,7 +11,7 @@ from mpm_2dinput_utils import Column2DSimulation
 def main(_):
     random_gen = True
     save_path = "mpm_inputs"
-    trajectory_names = ["sand2d-2"]
+    trajectory_names = ["sand2d-4"]
     cellsize = 0.025
     outer_cell_thickness = cellsize / 4
     simulation_domain = [[0.0, 1.0+outer_cell_thickness*2], [0.0, 1.0+outer_cell_thickness*2]]
@@ -134,7 +134,8 @@ def main(_):
 
         # with open(f"{save_path}/{trajectory_name}.txt", 'w') as file:
         #     file.write(json.dumps(metadata))
-
+        if not os.path.exists(f"{save_path}/{trajectory_name}"):
+            os.makedirs(f"{save_path}/{trajectory_name}")
         out_file = open(f"{save_path}/{trajectory_name}/metadata.json", "w")
         json.dump(metadata[f"simulation{i}"], out_file, indent=2)
         out_file.close()
