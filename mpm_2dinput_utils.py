@@ -630,7 +630,9 @@ class Column2DSimulation:
 
         ## Analysis
         mpm_json["analysis"] = analysis
-        if resume:
+        if not resume:
+            mpm_json["analysis"]["resume"]["resume"] = False
+        else:
             mpm_json["analysis"]["resume"]["resume"] = True
             del mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"]
 

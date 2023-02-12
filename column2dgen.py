@@ -11,10 +11,10 @@ from mpm_2dinput_utils import Column2DSimulation
 def main(_):
 
      ######## Inputs #######
-    dims = 2
+    dims = 3
     random_gen = True
     save_path = "mpm_inputs"
-    trajectory_names = ["sand2d-0", "sand2d-1", "sand2d-2"]
+    trajectory_names = ["sand3d-0"]
     cellsize = 0.1
     outer_cell_thickness = cellsize / 4
     simulation_domain = [
@@ -67,10 +67,10 @@ def main(_):
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
     if random_gen is True:
-        particle_length = [0.20, 0.20]  # length of cube for x, y dir
-        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 1.0]]
+        particle_length = [0.20, 0.20, 0.20]  # length of cube for x, y dir
+        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 1.0], [0.0, 0.7]]
         range_randomness = 0.2
-        vel_bound = [[-2.0, 2.0], [-2.0, 2.0]]
+        vel_bound = [[-2.0, 2.0], [-2.0, 2.0], [-2.0, 1.0]]
     else:  # type particle group info
         pass
         # particle_domain = [[]]
