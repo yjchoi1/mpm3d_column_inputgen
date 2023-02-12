@@ -5,9 +5,12 @@ import json
 import math
 import os
 
+# TODO: 1. mesh gen with outer boundary cells
+# TODO: 2. save metadata
+# TODO: 3. move input controls to main (e.g., material assignment for each group)
+# TODO: 4. improve to have more than 2 groups
 
-
-
+dims = 3
 
 def particle_ranges(num_particle_groups: int,
                     domain: list,
@@ -82,13 +85,100 @@ def particle_ranges(num_particle_groups: int,
 
     return ok_objs
 
+def create_particle_array(ndim: int,
+                          npart_perdim_percell: int,
+                          x_bound: list,
+                          y_bound: list,
+                          z_bound: list,
+                          randomness: float,
+                          cellsize: float):
+    '''
+    Create particle coordinate meshgrid nparray
 
-def mpm_input_gen(save_name, domain, cell_size, particle_info):
+    :param ndim: dimensions of simulation
+    :param nparticle_per_dir: npart_perdim_percell
+    :param x_bound: x-boundary of simulation as list (e.g., [0, 1]
+    :param y_bound: similar to x-boundary
+    :param z_bound: similar to x-boundary
+    :param cellsize:
+    :return: xyz coordinate meshgrid
+    '''
+    # Geometry
+    offset = cellsize / npart_perdim_percell / 2
+    particle_interval = cellsize / npart_perdim_percell
+    xmin = x_bound[0] + offset
+    xmax = x_bound[1] - offset
+    ymin = y_bound[0] + offset
+    ymax = y_bound[1] - offset
+    zmin = z_bound[0] + offset
+    zmax = z_bound[1] - offset
+
+    # Create particle arrays
+    x = np.arange(xmin, xmax + offset, particle_interval)
+    y = np.arange(ymin, ymax + offset, particle_interval)
+    z = np.arange(zmin, zmax + offset, particle_interval)
+    xyz = np.array(np.meshgrid(x, y, z)).T.reshape(-1, ndim)
+    xyz = xyz + np.random.uniform(-offset * randomness, offset * randomness, size=xyz.shape)
+    return xyz
+
+def create_mesh(simulation_domain, cellsize, outer_cell_thickness, dims=3):
+
+    # Generate mesh node coordinate bases
+    coord_bases = []
+    for i in range(dims):
+        coord_base = np.concatenate(
+            (np.array([simulation_domain[i][0]]),
+             np.arange(simulation_domain[i][0] + outer_cell_thickness, simulation_domain[i][1] - outer_cell_thickness, cellsize),
+             np.array([simulation_domain[i][1] - outer_cell_thickness, simulation_domain[i][1]])
+             ))
+        coord_bases.append(coord_base)
+
+    nnode_x = len(coord_bases[0])
+    nnode_y = len(coord_bases[1])
+    nnode_z = len(coord_bases[2])
+    nnode = nnode_x * nnode_y * nnode_z
+    nele_x = nnode_x - 1
+    nele_y = nnode_y - 1
+    nele_z = nnode_z - 1
+    nele = nele_x * nele_y * nele_z
+    nnode_in_ele = 8
+
+    # Create node coordinates
+    xyz = np.array(np.meshgrid(coord_bases[0], coord_bases[1], coord_bases[2])).T.reshape(-1, dims)
+    xyz = xyz[:, [1, 0, 2]]
+
+    # Make cell groups
+    cells = np.empty((int(nele), int(nnode_in_ele)))
+    i = 0
+    for elz in range(int(nele_z)):
+        for ely in range(int(nele_y)):
+            for elx in range(int(nele_x)):
+                # cell index starts from 1 not 0, so there is "1+" at first
+                cells[i, 0] = nnode_x * nnode_y * elz + ely * nnode_x + elx
+                cells[i, 1] = nnode_x * nnode_y * elz + ely * nnode_x + 1 + elx
+                cells[i, 2] = nnode_x * nnode_y * elz + (ely + 1) * nnode_x + 1 + elx
+                cells[i, 3] = nnode_x * nnode_y * elz + (ely + 1) * nnode_x + elx
+                cells[i, 4] = nnode_x * nnode_y * (elz + 1) + ely * nnode_x + elx
+                cells[i, 5] = nnode_x * nnode_y * (elz + 1) + ely * nnode_x + 1 + elx
+                cells[i, 6] = nnode_x * nnode_y * (elz + 1) + (ely + 1) * nnode_x + 1 + elx
+                cells[i, 7] = nnode_x * nnode_y * (elz + 1) + (ely + 1) * nnode_x + elx
+                i += 1
+    cells = cells.astype(int)
+
+    mesh_info = {"node_coords": xyz,
+                 "coord_bases": coord_bases,
+                 "n_node_x": nnode_x,
+                 "n_node_y": nnode_y,
+                 "n_node_z": nnode_z,
+                 "cell_groups": cells}
+
+    return mesh_info
+
+def mpm_input_gen(save_name, domain, cell_size, outer_cell_thickness, particle_info, dims=3):
 
     ## inputs
     # save_name = "3d_sand_column"
     # cell_size = 0.1  # assume we have the same cellsize for x, y, z directions
-    dim = 3
     npart_perdim_percell = 4
     particle_randomness = 0.5
     # domain = [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]
@@ -115,69 +205,39 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
     nsteps = 105000
     output_step_interval = 250
 
-
-
-    # particle array creator
-    def create_particle_array(ndim: int,
-                              npart_perdim_percell: int,
-                              x_bound: list,
-                              y_bound: list,
-                              z_bound: list,
-                              randomness: float,
-                              cellsize: float):
-        '''
-        Create particle coordinate meshgrid nparray
-
-        :param ndim: dimensions of simulation
-        :param nparticle_per_dir: npart_perdim_percell
-        :param x_bound: x-boundary of simulation as list (e.g., [0, 1]
-        :param y_bound: similar to x-boundary
-        :param z_bound: similar to x-boundary
-        :param cellsize:
-        :return: xyz coordinate meshgrid
-        '''
-        # Geometry
-        offset = cellsize / npart_perdim_percell / 2
-        particle_interval = cellsize / npart_perdim_percell
-        xmin = x_bound[0] + offset
-        xmax = x_bound[1] - offset
-        ymin = y_bound[0] + offset
-        ymax = y_bound[1] - offset
-        zmin = z_bound[0] + offset
-        zmax = z_bound[1] - offset
-
-        # Create particle arrays
-        x = np.arange(xmin, xmax + offset, particle_interval)
-        y = np.arange(ymin, ymax + offset, particle_interval)
-        z = np.arange(zmin, zmax + offset, particle_interval)
-        xyz = np.array(np.meshgrid(x, y, z)).T.reshape(-1, ndim)
-        xyz = xyz + np.random.uniform(-offset * randomness, offset * randomness, size=xyz.shape)
-        return xyz
-
-
-
-
     # init simulation
-    ncells = []
-    for i in range(dim):
-        ncell_per_dir = (domain[i][1] - domain[i][0])/cell_size
-        ncells.append(ncell_per_dir)
+    # mesh creator
+    mesh_info = create_mesh(simulation_domain=domain,
+                            cellsize=cell_size,
+                            outer_cell_thickness=outer_cell_thickness)
+
+    # # init simulation
+    # ncells = []
+    # for i in range(dims):
+    #     ncell_per_dir = (domain[i][1] - domain[i][0])/cell_size
+    #     ncells.append(ncell_per_dir)
     sim = mpminput.Simulation(title=f"{save_name}")
 
-
-    # simulation domain
+    # initiate domain
     sim.create_mesh(
-        dimensions=(domain[i][1] for i in range(dim)),
-        origin=tuple([domain[i][0] for i in range(dim)]),
-        ncells=tuple([ncells[i] for i in range(dim)])
+        dimensions=(domain[i][1] for i in range(dims)),
+        origin=tuple([domain[i][0] for i in range(dims)]),
+        ncells=(mesh_info["n_node_x"]-1, mesh_info["n_node_y"]-1, mesh_info["n_node_z"]-1)
+        # ncells=tuple([ncells[i] for i in range(dims)])
     )
+    s = 5
+
+    # replace mesh info with customized function
+    sim.mesh.nodes = mesh_info["node_coords"].tolist()
+    sim.mesh.cells = mesh_info["cell_groups"].tolist()
+    s = 5
 
     # particle groups
     sim.create_particles()
     particle_groups = []
     for pinfo in particle_info.values():
         particle_group = create_particle_array(
-            ndim=dim, npart_perdim_percell=npart_perdim_percell,
+            ndim=dims, npart_perdim_percell=npart_perdim_percell,
             x_bound=pinfo['bound'][0], y_bound=pinfo['bound'][1], z_bound=pinfo['bound'][2],
             randomness=particle_randomness, cellsize=cell_size)
         particle_groups.append(particle_group)
@@ -233,7 +293,7 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
     particles_velocity_constraints = []
     for pid, pinfo in enumerate(particle_info.values()):
         if pinfo["init_vel"] is not None:
-            for dir in range(dim):
+            for dir in range(dims):
                 particles_velocity_constraint = {"pset_id": pid+1, "dir": dir, "velocity": pinfo["init_vel"][dir]}
                 particles_velocity_constraints.append(particles_velocity_constraint)
                 sim.add_velocity_condition(dir=dir, vel_value=pinfo["init_vel"][dir], entity_set=pid+1, typ="particle")
@@ -265,9 +325,9 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
     )
     f.close()
 
-
     ## Visualization
     # visualize particle arrangement
+    coord_bases = mesh_info["coord_bases"]
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     simulation_info_text = {
@@ -283,7 +343,7 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
         ax.scatter(particles[:, 0], particles[:, 1], particles[:, 2], alpha=0.3, s=3)
         # show velocity quiver and value
         centers = []
-        for j in range(dim):
+        for j in range(dims):
             center = (particles[:, j].max() - particles[:, j].min()) / 2 + particles[:, j].min()
             centers.append(center)
         ax.quiver(centers[0], centers[1], centers[2], init_vel[0], init_vel[1], init_vel[2], length=0.3, color="black")
@@ -295,6 +355,16 @@ def mpm_input_gen(save_name, domain, cell_size, particle_info):
         ax.set_ylim(domain[1])
         ax.set_zlim(domain[2])
         ax.set_aspect('auto')
+        ax.set_xticks(coord_bases[0])
+        ax.set_yticks(coord_bases[1])
+        ax.set_yticks(coord_bases[2])
+        # ax.grid(which='major', color='#EEEEEE', linestyle=':', linewidth=0.5)
+        # ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+        # ax.xaxis.set_minor_locator(MultipleLocator(5))
+        ax.grid()
+        plt.savefig(f"{save_name}/initial_config.png")
+
+    # save simulation metadata
     with open(f'{save_name}/sim_metadata.json', 'w') as f:
         json.dump(simulation_info_text, f, indent=4)
     ax.set_xlabel("x")
