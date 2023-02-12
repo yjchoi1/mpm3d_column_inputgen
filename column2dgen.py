@@ -11,16 +11,16 @@ from mpm_2dinput_utils import Column2DSimulation
 def main(_):
 
      ######## Inputs #######
-    dims = 3
+    dims = 2
     random_gen = True
     save_path = "mpm_inputs"
-    trajectory_names = ["sand3d-0"]
-    cellsize = 0.1
+    trajectory_names = ["sand2d-0", "sand2d-1", "sand2d-2"]
+    cellsize = 0.05
     outer_cell_thickness = cellsize / 4
     simulation_domain = [
         [0.0, 1.0+outer_cell_thickness*2],
-        [0.0, 1.0+outer_cell_thickness*2],
-        [0.0, 1.0+outer_cell_thickness*2]]
+        [0.0, 1.0+outer_cell_thickness*2]
+    ]
     nparticle_perdim_percell = 4
     particle_randomness = 0.8
     wall_friction = 0.27
@@ -67,13 +67,14 @@ def main(_):
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
     if random_gen is True:
-        particle_length = [0.20, 0.20, 0.20]  # length of cube for x, y dir
-        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 1.0], [0.0, 0.7]]
+        particle_length = [0.15, 0.15]  # length of cube for x, y dir
+        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
         range_randomness = 0.2
-        vel_bound = [[-2.0, 2.0], [-2.0, 2.0], [-2.0, 1.0]]
+        vel_bound = [[-2.0, 2.0], [-2.0, 1.0]]
     else:  # type particle group info
         pass
         # particle_domain = [[]]
+
 
     # simulation options
     analysis = {
@@ -100,7 +101,17 @@ def main(_):
         "output_steps": 250,
         "vtk": ["stresses", "displacements"]
     }
-     ###############
+
+    if len(simulation_domain) != dims:
+        raise Exception("`simulation_domain` should match dims")
+    if len(particle_length) != dims:
+        raise Exception("`particle_length` should match dims")
+    if len(particle_gen_candidate_area) != dims:
+        raise Exception("`particle_gen_candidate_area` should match dims")
+    if len(vel_bound) != dims:
+        raise Exception("`vel_bound` should match dims")
+
+    ###############
 
     # Create trajectory meta data
     metadata = {}
@@ -183,6 +194,7 @@ def main(_):
             particle_info=particle_info,
             analysis=analysis,
             resume=True)
+
 
 if __name__ == '__main__':
     app.run(main)

@@ -395,7 +395,7 @@ class Column2DSimulation:
                     yend_bound_node_id.append(i)
                 if coord[2] == z_bounds[0]:
                     zstart_bound_node_id.append(i)
-                if coord[2] == y_bounds[1]:
+                if coord[2] == z_bounds[1]:
                     zend_bound_node_id.append(i)
         else:
             for i, coord in enumerate(mesh_info["node_coords"]):
@@ -444,12 +444,12 @@ class Column2DSimulation:
         mpm_json["mesh"] = {
             "mesh": "mesh.txt",
             "entity_sets": "entity_sets.json",
+            "boundary_conditions": {},
             "cell_type": "ED3H8" if self.dims == 3 else "ED2Q4",
             "isoparametric": False,
             "check_duplicates": True,
             "io_type": "Ascii3D" if self.dims == 3 else "Ascii2D",
-            "node_type": "N3D" if self.dims == 3 else "N2D",
-            "boundary_conditions": {}
+            "node_type": "N3D" if self.dims == 3 else "N2D"
         }
         # velocity constraints for boundaries
         if self.dims == 3:
@@ -578,22 +578,23 @@ class Column2DSimulation:
         # particle initial velocity constraints
         mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"] = []
         for i, pinfo in enumerate(particle_info.values()):
-            # x_vel constraints
-            mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
-                {
-                    "pset_id": i,
-                    "dir": 0,
-                    "velocity": pinfo["particle_vel"][0]
-                }
-            )
-            # y_vel constraints
-            mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
-                {
-                    "pset_id": i,
-                    "dir": 1,
-                    "velocity": pinfo["particle_vel"][1]
-                }
-            )
+            for dim in range(self.dims):
+                # x_vel constraints
+                mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
+                    {
+                        "pset_id": i,
+                        "dir": dim,
+                        "velocity": pinfo["particle_vel"][dim]
+                    }
+                )
+            # # y_vel constraints
+            # mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
+            #     {
+            #         "pset_id": i,
+            #         "dir": 1,
+            #         "velocity": pinfo["particle_vel"][1]
+            #     }
+            # )
 
         ## Particle info
         mpm_json["particles"] = []
