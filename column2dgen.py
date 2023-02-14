@@ -10,8 +10,12 @@ from mpm_2dinput_utils import Column2DSimulation
 
 def main(_):
     random_gen = True
+    if random_gen == False:
+        input_metadata_name = "metadata-sand2d"
     save_path = "mpm_inputs"
-    trajectory_names = ["sand2d-4"]
+    simulation_case = "sand2d"
+    data_tag = ["4", "5"]
+    trajectory_names = [f"{simulation_case}-{i}" for i in data_tag]
     cellsize = 0.025
     outer_cell_thickness = cellsize / 4
     simulation_domain = [[0.0, 1.0+outer_cell_thickness*2], [0.0, 1.0+outer_cell_thickness*2]]
@@ -57,17 +61,15 @@ def main(_):
             "residual_pdstrain": 0.0
         }
     ]
-    material_id = [0, 2, 0]  # material id of each particle group
+    material_id = [0, 2, 0]  # material id associated with each particle group
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
+
     if random_gen is True:
         particle_length = [0.20, 0.20]  # length of cube for x, y dir
         particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
         range_randomness = 0.2
         vel_bound = [[-2.0, 2.0], [-2.0, 1.5]]
-    else:  # type particle group info
-        pass
-        # particle_domain = [[]]
 
 
     # simulation options
@@ -98,47 +100,56 @@ def main(_):
 
     # Create trajectory meta data
     metadata = {}
-    for i, trajectory_name in enumerate(trajectory_names):
+    if random_gen == True:
+        for i, trajectory_name in enumerate(trajectory_names):
 
-        # general simulation config
-        metadata[f"simulation{i}"] = {}
-        metadata[f"simulation{i}"]["name"] = trajectory_name
-        metadata[f"simulation{i}"]["cellsize"] = cellsize
-        metadata[f"simulation{i}"]["outer_cell_thickness"] = outer_cell_thickness
-        metadata[f"simulation{i}"]["simulation_domain"] = simulation_domain
-        metadata[f"simulation{i}"]["nparticle_perdim_percell"] = nparticle_perdim_percell
-        metadata[f"simulation{i}"]["particle_randomness"] = particle_randomness
+            # general simulation config
+            metadata[f"simulation{i}"] = {}
+            metadata[f"simulation{i}"]["name"] = trajectory_name
+            metadata[f"simulation{i}"]["cellsize"] = cellsize
+            metadata[f"simulation{i}"]["outer_cell_thickness"] = outer_cell_thickness
+            metadata[f"simulation{i}"]["simulation_domain"] = simulation_domain
+            metadata[f"simulation{i}"]["nparticle_perdim_percell"] = nparticle_perdim_percell
+            metadata[f"simulation{i}"]["particle_randomness"] = particle_randomness
 
-        # particle config for each simulation
-        metadata[f"simulation{i}"]["particle"] = {}
-        # random gen for ranges where particles are generated
-        particle_ranges = box_ranges_gen.make_n_box_ranges(
-            num_particle_groups=num_particle_groups,
-            size=particle_length,
-            domain=particle_gen_candidate_area,
-            size_random_level=range_randomness,
-            boundary_offset=[cellsize, cellsize],
-            min_interval=cellsize/2
-        )
+            # particle config for each simulation
+            metadata[f"simulation{i}"]["particle"] = {}
+            # random gen for ranges where particles are generated
+            particle_ranges = box_ranges_gen.make_n_box_ranges(
+                num_particle_groups=num_particle_groups,
+                size=particle_length,
+                domain=particle_gen_candidate_area,
+                size_random_level=range_randomness,
+                boundary_offset=[cellsize, cellsize],
+                min_interval=cellsize/2
+            )
 
-        # assign the generated ranges, vel, and materials for each particle group
-        for g in range(num_particle_groups):
-            metadata[f"simulation{i}"]["particle"][f"group{g}"] = {
-                "particle_domain": particle_ranges[g],
-                "particle_vel":  [
-                    random.uniform(vel_bound[0][0], vel_bound[0][1]),
-                    random.uniform(vel_bound[1][0], vel_bound[1][1])
-                ],
-                "material_id": material_id[g]
-            }
+            # assign the generated ranges, vel, and materials for each particle group
+            for g in range(num_particle_groups):
+                metadata[f"simulation{i}"]["particle"][f"group{g}"] = {
+                    "particle_domain": particle_ranges[g],
+                    "particle_vel":  [
+                        random.uniform(vel_bound[0][0], vel_bound[0][1]),
+                        random.uniform(vel_bound[1][0], vel_bound[1][1])
+                    ],
+                    "material_id": material_id[g]
+                }
 
-        # with open(f"{save_path}/{trajectory_name}.txt", 'w') as file:
-        #     file.write(json.dumps(metadata))
-        if not os.path.exists(f"{save_path}/{trajectory_name}"):
-            os.makedirs(f"{save_path}/{trajectory_name}")
-        out_file = open(f"{save_path}/{trajectory_name}/metadata.json", "w")
-        json.dump(metadata[f"simulation{i}"], out_file, indent=2)
+            # save metadata individually for each sim folder
+            if not os.path.exists(f"{save_path}/{trajectory_name}"):
+                os.makedirs(f"{save_path}/{trajectory_name}")
+            out_file = open(f"{save_path}/{trajectory_name}/metadata.json", "w")
+            json.dump(metadata[f"simulation{i}"], out_file, indent=2)
+            out_file.close()
+        # save metadata for entire sims
+        out_file = open(f"{save_path}/metadata-{simulation_case}.json", "w")
+        json.dump(metadata, out_file, indent=2)
         out_file.close()
+
+    elif random_gen == False:
+        # read metadata
+        f = open(f"{save_path}/{input_metadata_name}.json")
+        metadata = json.load(f)
 
 
     # init
