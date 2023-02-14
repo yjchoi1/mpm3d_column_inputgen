@@ -7,7 +7,7 @@ def make_n_box_ranges(num_particle_groups,
                       size_random_level,
                       boundary_offset,
                       min_interval,
-                      dimensions=2):
+                      ):
     """
     Generates n non-overlapping box ranges in the given domain.
 
@@ -35,6 +35,7 @@ def make_n_box_ranges(num_particle_groups,
         A list of generated box ranges, represented as a list of lists, where each inner list
         contains tuples representing the start and end of the box range in each dimension.
     """
+    dimensions = len(domain)
     boxes = []
     attempt = 0
     max_attempts = 100

@@ -5,30 +5,36 @@ import random
 from absl import app
 import os
 import box_ranges_gen
-from mpm_2dinput_utils import Column2DSimulation
+from mpm_2dinput_utils import ColumnSimulation
 
 
 def main(_):
+    ndims = 3
     random_gen = True
     if random_gen == False:
         input_metadata_name = "metadata-sand2d"
     save_path = "mpm_inputs"
-    simulation_case = "sand2d"
-    data_tag = ["4", "5"]
+    simulation_case = "sand3d-test"
+    data_tag = ["0", "1", "2"]
     trajectory_names = [f"{simulation_case}-{i}" for i in data_tag]
-    cellsize = 0.025
-    outer_cell_thickness = cellsize / 4
-    simulation_domain = [[0.0, 1.0+outer_cell_thickness*2], [0.0, 1.0+outer_cell_thickness*2]]
+    cellsize = 0.1
+    outer_cell_thickness = cellsize
+    simulation_domain = [[0.0, 0.8+outer_cell_thickness*2],
+                         [0.0, 0.8+outer_cell_thickness*2],
+                         [0.0, 0.8+outer_cell_thickness*2]]
+    if len(simulation_domain) is not ndims:
+        raise Exception("`simulation_domain` should match `ndims`")
     nparticle_perdim_percell = 4
-    particle_randomness = 0.8
+    particle_randomness = 0.5
     wall_friction = 0.27
 
-    num_particle_groups = 3
+    num_particle_groups = 1
     # define materials
+    material_model = "MohrCoulomb3D" if ndims == 3 else "MohrCoulomb2D"
     materials = [
         {
             "id": 0,
-            "type": "MohrCoulomb2D",
+            "type": material_model,
             "density": 1800,
             "youngs_modulus": 2000000.0,
             "poisson_ratio": 0.3,
@@ -45,7 +51,7 @@ def main(_):
         },
         {
             "id": 2,
-            "type": "MohrCoulomb2D",
+            "type": material_model,
             "density": 1800,
             "youngs_modulus": 2000000.0,
             "poisson_ratio": 0.3,
@@ -61,20 +67,22 @@ def main(_):
             "residual_pdstrain": 0.0
         }
     ]
-    material_id = [0, 2, 0]  # material id associated with each particle group
+    material_id = [0]  # material id associated with each particle group
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
 
     if random_gen is True:
-        particle_length = [0.20, 0.20]  # length of cube for x, y dir
-        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
+        particle_length = [0.20, 0.20, 0.20]  # length of cube for x, y dir
+        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7], [0.0, 0.7]]
         range_randomness = 0.2
-        vel_bound = [[-2.0, 2.0], [-2.0, 1.5]]
-
+        vel_bound = [[0, 0], [0, 0], [0, 0]]
+        # error
+        if len(particle_length) and len(particle_gen_candidate_area) and len(vel_bound) is not ndims:
+            raise Exception("particle related inputs should match `ndims`")
 
     # simulation options
     analysis = {
-        "type": "MPMExplicit2D",
+        "type": "MPMExplicit3D" if ndims == 3 else "MPMExplicit2D",
         "mpm_scheme": "usf",
         "locate_particles": False,
         "dt": 1e-05,
@@ -84,12 +92,12 @@ def main(_):
         },
         "resume": {
             "resume": False,
-            "uuid": "2dsand",
+            "uuid": f"{simulation_case}",
             "step": 0
         },
         "velocity_update": False,
         "nsteps": 105000,
-        "uuid": "2dsand"
+        "uuid": f"{simulation_case}"
 
     }
     post_processing = {
@@ -97,6 +105,8 @@ def main(_):
         "output_steps": 250,
         "vtk": ["stresses", "displacements"]
     }
+
+#############################################################################################################
 
     # Create trajectory meta data
     metadata = {}
@@ -120,7 +130,7 @@ def main(_):
                 size=particle_length,
                 domain=particle_gen_candidate_area,
                 size_random_level=range_randomness,
-                boundary_offset=[cellsize, cellsize],
+                boundary_offset=[outer_cell_thickness for _ in range(ndims)],
                 min_interval=cellsize/2
             )
 
@@ -128,10 +138,7 @@ def main(_):
             for g in range(num_particle_groups):
                 metadata[f"simulation{i}"]["particle"][f"group{g}"] = {
                     "particle_domain": particle_ranges[g],
-                    "particle_vel":  [
-                        random.uniform(vel_bound[0][0], vel_bound[0][1]),
-                        random.uniform(vel_bound[1][0], vel_bound[1][1])
-                    ],
+                    "particle_vel":  [random.uniform(vel_bound[i][0], vel_bound[i][1]) for i in range(ndims)],
                     "material_id": material_id[g]
                 }
 
@@ -153,13 +160,14 @@ def main(_):
 
 
     # init
-    sim = Column2DSimulation(simulation_domain=simulation_domain,
-                             cellsize=cellsize,
-                             outer_cell_thickness=outer_cell_thickness,
-                             npart_perdim_percell=nparticle_perdim_percell,
-                             randomness=particle_randomness,
-                             wall_friction=wall_friction,
-                             post_processing=post_processing)
+    sim = ColumnSimulation(simulation_domain=simulation_domain,
+                           cellsize=cellsize,
+                           outer_cell_thickness=outer_cell_thickness,
+                           npart_perdim_percell=nparticle_perdim_percell,
+                           randomness=particle_randomness,
+                           wall_friction=wall_friction,
+                           post_processing=post_processing,
+                           dims=ndims)
 
     # gen mpm inputs
     for simulation in metadata.values():
@@ -171,6 +179,7 @@ def main(_):
         # write particle
         particle_info = sim.create_particle(simulation["particle"])
         sim.write_particle_file(particle_info, save_path=f"{save_path}/{simulation['name']}")
+        sim.plot_particle_config(particle_group_info=particle_info, save_path=f"{save_path}/{simulation['name']}")
 
         # write entity
         sim.write_entity(save_path=f"{save_path}/{simulation['name']}",
