@@ -14,7 +14,7 @@ def main(_):
     dims = 2
     random_gen = True
     save_path = "mpm_inputs"
-    trajectory_names = ["sand2d-0", "sand2d-1", "sand2d-2"]
+    trajectory_names = ["sand2d-m1-0", "sand2d-m1-1", "sand2d-m1-2"]
     cellsize = 0.05
     outer_cell_thickness = cellsize / 4
     simulation_domain = [
@@ -25,7 +25,7 @@ def main(_):
     particle_randomness = 0.8
     wall_friction = 0.27
 
-    num_particle_groups = 2
+    num_particle_groups = 1
     # define materials
     materials = [
         {
@@ -34,7 +34,7 @@ def main(_):
             "density": 1800,
             "youngs_modulus": 2000000.0,
             "poisson_ratio": 0.3,
-            "friction": 30,
+            "friction": 20,
             "dilation": 0.0,
             "cohesion": 100,
             "tension_cutoff": 50,
@@ -46,12 +46,12 @@ def main(_):
             "residual_pdstrain": 0.0
         },
         {
-            "id": 2,
+            "id": 1,
             "type": "MohrCoulomb3D" if dims == 3 else "MohrCoulomb2D",
             "density": 1800,
             "youngs_modulus": 2000000.0,
             "poisson_ratio": 0.3,
-            "friction": 30,
+            "friction": 40,
             "dilation": 0.0,
             "cohesion": 100,
             "tension_cutoff": 50,
@@ -63,12 +63,12 @@ def main(_):
             "residual_pdstrain": 0.0
         }
     ]
-    material_id = [0, 0]  # material id of each particle group
+    material_id = [1]  # material id of each particle group
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
     if random_gen is True:
         particle_length = [0.15, 0.15]  # length of cube for x, y dir
-        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
+        particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.5]]
         range_randomness = 0.2
         vel_bound = [[-2.0, 2.0], [-2.0, 1.0]]
     else:  # type particle group info
@@ -92,7 +92,7 @@ def main(_):
             "step": 0
         },
         "velocity_update": False,
-        "nsteps": 105000,
+        "nsteps": 80000,
         "uuid": "3dsand" if dims == 3 else "2dsand",
 
     }
