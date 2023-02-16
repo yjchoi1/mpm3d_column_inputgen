@@ -5,7 +5,6 @@ def make_n_box_ranges(num_particle_groups,
                       size,
                       domain,
                       size_random_level,
-                      boundary_offset,
                       min_interval,
                       ):
     """
@@ -22,8 +21,6 @@ def make_n_box_ranges(num_particle_groups,
         where each tuple contains the start and end of the domain in each dimension
     size_random_level: float
         The level of randomization to apply to each box size
-    boundary_offset: List of float
-        The distance from the boundary to be maintained for each dimension
     min_interval: float
         The minimum interval to be maintained between boxes in each dimension
     dimensions: int, optional (default=2)
@@ -35,6 +32,7 @@ def make_n_box_ranges(num_particle_groups,
         A list of generated box ranges, represented as a list of lists, where each inner list
         contains tuples representing the start and end of the box range in each dimension.
     """
+
     dimensions = len(domain)
     boxes = []
     attempt = 0
@@ -44,7 +42,7 @@ def make_n_box_ranges(num_particle_groups,
         box = []
         for i in range(dimensions):
             start = random.uniform(
-                domain[i][0]+boundary_offset[i], domain[i][1]-boundary_offset[i] - random_size[i] - min_interval)
+                domain[i][0], domain[i][1] - random_size[i] - min_interval)
             end = start + random_size[i]
             box.append((start, end))
         overlap = False

@@ -16,57 +16,80 @@ class ColumnSimulation:
 
     def __init__(self,
                  simulation_domain: list,
-                 cellsize: float,
-                 outer_cell_thickness: float,
+                 ncells_per_dim: list,
                  npart_perdim_percell: int,
                  randomness: float,
                  wall_friction: float,
                  post_processing: dict,
-                 dims: int):
+                 dims: int,
+                 outer_cell_thickness: float,
+                 k0: float or bool):
         """
-        Initiate simulation
-        :param simulation_domain: Simulation domain (boundary)
-        :param cellsize: Size of width and height of each cell for the mesh generation
+
+        :param simulation_domain: Simulation domain (boundary) that you want to set.
+        Note that this is not the actual simulation domain taken by MPM.
+        If outer_cell_thickness is provided, the actual domain is
+        [simulation_domain[0]- outer_cell_thickness, simulation_domain[1] + outer_cell_thickness]
+        If not provided, the actual domain is
+        [simulation_domain[0], simulation_domain[1]]
+        :param ncells_per_dim: number of cells per dimension. The mesh nodes will be generated with equal space
+        computed by `(simulation_domain[1] - simulation_domain[0])/ncells_per_dim`.
         :param npart_perdim_percell: number of particles to locate in each dimension of the cell
         :param randomness: uniform random distribution parameter for randomly perturb the particles
+        :param wall_friction:
+        :param post_processing:
+        :param dims:
+        :param outer_cell_thickness: If provided, the outer mesh will be added to the mesh defined by simulation_domain.
+        Therefore, The actual domain is
+        [simulation_domain[0]- outer_cell_thickness, simulation_domain[1] + outer_cell_thickness]
+        If not provided, the actual domain is
+        [simulation_domain[0], simulation_domain[1]]
         """
+
         self.simulation_domain = simulation_domain
-        self.cellsize = cellsize
-        self.outer_cell_thickness = outer_cell_thickness
+        # assume cell size are the same for all dims
+        cellsize_per_dim = [(simulation_domain[i][1] - simulation_domain[i][0]) / ncells_per_dim[i] for i in range(dims)]
+        if not all(cellsize == cellsize_per_dim[0] for cellsize in cellsize_per_dim):
+            raise NotImplementedError("All cell size per dim should be the same")
+        self.cellsize = cellsize_per_dim[0]
         self.npart_perdim_percell = npart_perdim_percell
         self.randomness = randomness
         self.wall_friction = wall_friction
         self.dims = dims
         self.post_processing = post_processing
-        self.decimal_round = 7
+        self.k0 = k0
+
+        mesh_coord_base = []
+        if outer_cell_thickness > 0:
+            for dim, coord_range in enumerate(simulation_domain):
+                first_cell = np.array([coord_range[0] - outer_cell_thickness])
+                end_cell = np.array([coord_range[1] + outer_cell_thickness])
+                sim_base = np.linspace(coord_range[0], coord_range[1], ncells_per_dim[dim]+1)
+                coord_base = np.concatenate((first_cell, sim_base, end_cell))
+                mesh_coord_base.append(coord_base)
+            self.mesh_coord_base = mesh_coord_base
+        elif outer_cell_thickness == 0:
+            for dim, coord_range in enumerate(simulation_domain):
+                coord_base = np.linspace(coord_range[0], coord_range[1], ncells_per_dim[dim]+1)
+                mesh_coord_base.append(coord_base)
+            self.mesh_coord_base = mesh_coord_base
+        else:
+            raise Exception("Outer cell thickness cannot be negative value")
 
     def create_mesh(self):
 
         # For 2D
         if self.dims == 2:
-            # define x and y boundary of simulation
-            coord_bases = []
-            for i in range(self.dims):
-                coord_base = np.concatenate(
-                    (np.array([self.simulation_domain[i][0]]),
-                     np.arange(round(self.simulation_domain[i][0] + self.outer_cell_thickness, self.decimal_round),
-                               round(self.simulation_domain[i][1] - self.outer_cell_thickness, self.decimal_round),
-                               self.cellsize),
-                     np.array([round(self.simulation_domain[i][1] - self.outer_cell_thickness, self.decimal_round),
-                               self.simulation_domain[i][1]])
-                     )
-                )
-                coord_bases.append(coord_base)
-
+            # Create node coordinates
             coords = []
-            for y in coord_bases[1]:
-                for x in coord_bases[0]:
+            for y in self.mesh_coord_base[1]:
+                for x in self.mesh_coord_base[0]:
                     coords.append([x, y])
             coords = np.array(coords)
 
             # Compute the number of nodes and elements for each dimension
-            nnode_x = len(coord_bases[0])
-            nnode_y = len(coord_bases[1])
+            nnode_x = len(self.mesh_coord_base[0])
+            nnode_y = len(self.mesh_coord_base[1])
             nele_x = nnode_x - 1
             nele_y = nnode_y - 1
             nnode = len(coords)
@@ -92,33 +115,22 @@ class ColumnSimulation:
 
         # For 3D
         else:
-            # Generate mesh node coordinate bases
-            coord_bases = []
-            for i in range(self.dims):
-                coord_base = np.concatenate(
-                    (np.array([self.simulation_domain[i][0]]),
-                     np.arange(round(self.simulation_domain[i][0] + self.outer_cell_thickness, self.decimal_round),
-                               round(self.simulation_domain[i][1] - self.outer_cell_thickness, self.decimal_round),
-                               self.cellsize),
-                     np.array([round(self.simulation_domain[i][1] - self.outer_cell_thickness, self.decimal_round),
-                               self.simulation_domain[i][1]])
-                     )
-                )
-                coord_bases.append(coord_base)
+            # Create node coordinates
+            coords = np.array(
+                np.meshgrid(self.mesh_coord_base[0], self.mesh_coord_base[1], self.mesh_coord_base[2])
+            ).T.reshape(-1, self.dims)
+            coords = coords[:, [1, 0, 2]]
 
-            nnode_x = len(coord_bases[0])
-            nnode_y = len(coord_bases[1])
-            nnode_z = len(coord_bases[2])
+            # Compute the number of nodes and elements for each dimension
+            nnode_x = len(self.mesh_coord_base[0])
+            nnode_y = len(self.mesh_coord_base[1])
+            nnode_z = len(self.mesh_coord_base[2])
             nnode = nnode_x * nnode_y * nnode_z
             nele_x = nnode_x - 1
             nele_y = nnode_y - 1
             nele_z = nnode_z - 1
             nele = nele_x * nele_y * nele_z
             nnode_in_ele = 8
-
-            # Create node coordinates
-            coords = np.array(np.meshgrid(coord_bases[0], coord_bases[1], coord_bases[2])).T.reshape(-1, self.dims)
-            coords = coords[:, [1, 0, 2]]
 
             # Make cell groups
             cells = np.empty((int(nele), int(nnode_in_ele)))
@@ -274,17 +286,47 @@ class ColumnSimulation:
         )
         f.close()
 
-    def plot_particle_config(self, particle_group_info, save_path):
+    def particle_K0_stress(self, density, particle_group_info, save_path):
 
-        coord_bases = []
-        for i in range(self.dims):
-            coord_base = np.concatenate(
-                (np.array([self.simulation_domain[i][0]]),
-                 np.arange(self.simulation_domain[i][0] + self.outer_cell_thickness,
-                           self.simulation_domain[i][1] - self.outer_cell_thickness, self.cellsize),
-                 np.array([self.simulation_domain[i][1] - self.outer_cell_thickness, self.simulation_domain[i][1]])
-                 ))
-            coord_bases.append(coord_base)
+        # TODO: make it available to assign multiple density associated with each particle set
+        particle_coords = []
+        for pid, pinfo in particle_group_info.items():
+            coord = pinfo["particle_coords"]
+            particle_coords.append(coord)
+        particle_coords = np.concatenate(particle_coords)
+        unit_weight = density * 9.81
+
+        print(f"Make `particles_stresses.txt` with K0={self.k0}, density={density}")
+        particle_stress = np.zeros((np.shape(particle_coords)[0], 3))  # second axis is for stress xx, yy, zz
+        if self.dims == 2:
+            vertical_stress = (np.max(particle_coords[: 1]) - particle_coords[:, 1]) * unit_weight  # H*Unit_Weight
+            particle_stress[:, 0] = self.k0 * vertical_stress  # K0*H*Unit_Weight
+            particle_stress[:, 1] = vertical_stress
+            particle_stress[:, 2] = 0  # for 2d case stress zz is zero
+        elif self.dims == 3:
+            vertical_stress = (np.max(particle_coords[: 2]) - particle_coords[:, 2]) * unit_weight  # H*Unit_Weight
+            particle_stress[:, 0] = self.k0 * vertical_stress  # K0*H*Unit_Weight
+            particle_stress[:, 1] = self.k0 * vertical_stress  # K0*H*Unit_Weight
+            particle_stress[:, 2] = vertical_stress
+        else:
+            raise NotImplementedError
+
+        # Write the number of stressed particles
+        f = open(f"{save_path}/particles-stresses.txt", "w")
+        f.write(f"{np.shape(particle_coords)[0]} \n")
+        f.close()
+
+        # Write coordinates for particles
+        f = open(f"{save_path}/particles-stresses.txt", "a")
+        f.write(
+            np.array2string(
+                # particles, formatter={'float_kind':lambda lam: "%.4f" % lam}, threshold=math.inf
+                particle_stress, threshold=math.inf
+            ).replace(' [', '').replace('[', '').replace(']', '')
+        )
+        f.close()
+
+    def plot_particle_config(self, particle_group_info, save_path):
 
         # write figure of initial config
         # 2d plot
@@ -309,8 +351,8 @@ class ColumnSimulation:
                     ax.text(x_center, y_center, f"vel = {str(print_vel)}")
                 text_loc = [x_center, pinfo["particle_coords"][:, 1].max()]  # location of the top of a particle group
                 ax.text(text_loc[0], text_loc[1], f'group{i}')
-            ax.set_xticks(coord_bases[0])
-            ax.set_yticks(coord_bases[1])
+            ax.set_xticks(self.mesh_coord_base[0])
+            ax.set_yticks(self.mesh_coord_base[1])
             # ax.grid(which='major', color='#EEEEEE', linestyle=':', linewidth=0.5)
             # ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
             # ax.xaxis.set_minor_locator(MultipleLocator(5))
@@ -339,9 +381,9 @@ class ColumnSimulation:
                 ax.set_ylim(self.simulation_domain[1])
                 ax.set_zlim(self.simulation_domain[2])
                 ax.set_aspect('auto')
-                ax.set_xticks(coord_bases[0])
-                ax.set_yticks(coord_bases[1])
-                ax.set_yticks(coord_bases[2])
+                ax.set_xticks(self.mesh_coord_base[0])
+                ax.set_yticks(self.mesh_coord_base[1])
+                ax.set_zticks(self.mesh_coord_base[2])
                 # ax.grid(which='major', color='#EEEEEE', linestyle=':', linewidth=0.5)
                 # ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
                 # ax.xaxis.set_minor_locator(MultipleLocator(5))
@@ -451,6 +493,9 @@ class ColumnSimulation:
             "io_type": "Ascii3D" if self.dims == 3 else "Ascii2D",
             "node_type": "N3D" if self.dims == 3 else "N2D"
         }
+        # add particle-stress if k0 is provided
+        if self.k0 is not None:
+            mpm_json["mesh"]["particles_stresses"] = "particles-stresses.txt"
         # velocity constraints for boundaries
         if self.dims == 3:
             mpm_json["mesh"]["boundary_conditions"]["velocity_constraints"] = [
@@ -636,6 +681,7 @@ class ColumnSimulation:
         else:
             mpm_json["analysis"]["resume"]["resume"] = True
             del mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"]
+            del mpm_json["mesh"]["particles_stresses"]
 
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
