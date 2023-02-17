@@ -299,12 +299,12 @@ class ColumnSimulation:
         print(f"Make `particles_stresses.txt` with K0={self.k0}, density={density}")
         particle_stress = np.zeros((np.shape(particle_coords)[0], 3))  # second axis is for stress xx, yy, zz
         if self.dims == 2:
-            vertical_stress = (np.max(particle_coords[: 1]) - particle_coords[:, 1]) * unit_weight  # H*Unit_Weight
+            vertical_stress = (np.max(particle_coords[:, 1]) - particle_coords[:, 1]) * unit_weight  # H*Unit_Weight
             particle_stress[:, 0] = self.k0 * vertical_stress  # K0*H*Unit_Weight
             particle_stress[:, 1] = vertical_stress
             particle_stress[:, 2] = 0  # for 2d case stress zz is zero
         elif self.dims == 3:
-            vertical_stress = (np.max(particle_coords[: 2]) - particle_coords[:, 2]) * unit_weight  # H*Unit_Weight
+            vertical_stress = (np.max(particle_coords[:, 2]) - particle_coords[:, 2]) * unit_weight  # H*Unit_Weight
             particle_stress[:, 0] = self.k0 * vertical_stress  # K0*H*Unit_Weight
             particle_stress[:, 1] = self.k0 * vertical_stress  # K0*H*Unit_Weight
             particle_stress[:, 2] = vertical_stress

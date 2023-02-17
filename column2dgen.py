@@ -10,7 +10,7 @@ from mpm_2dinput_utils import ColumnSimulation
 ndims = 2
 random_gen = True
 if random_gen == False:
-    input_metadata_name = "metadata-3dsand_test3-4"
+    input_metadata_name = "metadata-sand2d_train_static"
 save_path = "sand2d_boundary"
 simulation_case = "sand2d_train"
 data_tag = [str(tag) for tag in range(0, 10)]
@@ -71,10 +71,10 @@ if len(material_id) is not num_particle_groups:
     raise Exception("`num_particle_groups` should match len(material_id)")
 
 if random_gen is True:
-    particle_length = [0.40, 0.40, 0.40]  # length of cube for x, y dir
+    particle_length = [0.30, 0.30]  # length of cube for x, y dir
     particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
     range_randomness = 0.1
-    vel_bound = [[-2.0, 2.0], [-2.0, 2.0]]
+    vel_bound = [[-2, 2], [-2, 1]]
     # error
     if len(particle_length) and len(particle_gen_candidate_area) and len(vel_bound) is not ndims:
         raise Exception("particle related inputs should match `ndims`")
@@ -128,6 +128,7 @@ def main(_):
             metadata[f"simulation{i}"]["nparticle_perdim_percell"] = nparticle_perdim_percell
             metadata[f"simulation{i}"]["particle_randomness"] = particle_randomness
             metadata[f"simulation{i}"]["k0"] = k0
+            metadata[f"simulation{i}"]["wall_friction"] = wall_friction
 
             # particle config for each simulation
             metadata[f"simulation{i}"]["particle"] = {}
@@ -178,10 +179,10 @@ def main(_):
                            outer_cell_thickness=metadata["simulation0"]["outer_cell_thickness"],
                            npart_perdim_percell=metadata["simulation0"]["nparticle_perdim_percell"],
                            randomness=metadata["simulation0"]["particle_randomness"],
-                           wall_friction=wall_friction,
+                           wall_friction=metadata["simulation0"]["wall_friction"],
                            post_processing=post_processing,
                            dims=ndims,
-                           k0=k0)
+                           k0=metadata["simulation0"]["particle_randomness"])
 
     # gen mpm inputs
     for simulation in metadata.values():
