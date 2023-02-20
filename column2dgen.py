@@ -8,26 +8,48 @@ import box_ranges_gen
 from mpm_2dinput_utils import ColumnSimulation
 
 ndims = 2
-random_gen = True
-if random_gen == False:
-    input_metadata_name = "metadata-sand2d_train_static"
 save_path = "sand2d_boundary"
-simulation_case = "sand2d_train"
-data_tag = [str(tag) for tag in range(0, 10)]
-trajectory_names = [f"{simulation_case}{i}" for i in data_tag]
-ncells_per_dim = [40, 40]  ####
-outer_cell_thickness = 0.00625
-simulation_domain = [[0.0, 1.0],
-                     [0.0, 1.0]]
-if len(simulation_domain) is not ndims:
-    raise Exception("`simulation_domain` should match `ndims`")
-nparticle_perdim_percell = 4
-particle_randomness = 0.8
-wall_friction = 0.27
-k0 = 0.5  # for computing geostatic stress for particles. Set `None` if not considering it.
+random_gen = False
 density = 1800  # assume all material has the same density
 
-num_particle_groups = 1
+if random_gen == False:
+    simulation_case = "sand2d_configtest11"
+    input_metadata_name = "metadata-sand2d_configtest11"
+    k0 = 0.5
+
+elif random_gen == True:
+
+    # About simulation
+    simulation_case = "sand2d_configtest4-6"
+    k0 = None  # for computing geostatic stress for particles. Set `None` if not considering it
+    data_tag = [str(tag) for tag in range(4, 6)]
+    trajectory_names = [f"{simulation_case}{i}" for i in data_tag]
+    ncells_per_dim = [50, 50]  ####
+    outer_cell_thickness = 0.005
+    simulation_domain = [[0.0, 1.0],
+                         [0.0, 1.0]]
+    if len(simulation_domain) is not ndims:
+        raise Exception("`simulation_domain` should match `ndims`")
+    nparticle_perdim_percell = 4
+    particle_randomness = 0.8
+    wall_friction = 0.27
+    num_particle_groups = 1
+    material_id = [0]  # material id associated with each particle group
+    if len(material_id) is not num_particle_groups:
+        raise Exception("`num_particle_groups` should match len(material_id)")
+
+    # About particles
+    particle_length = [0.3, 0.3]  # length of cube for x, y dir
+    particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
+    range_randomness = 0.1
+    vel_bound = [[-2, 2], [-2, 1.5]]
+    # error
+    if len(particle_length) != ndims or len(particle_gen_candidate_area) != ndims or len(vel_bound) != ndims:
+        raise Exception("particle related inputs should match `ndims`")
+
+else:
+    raise Exception("Either `random_gen` should be either true or false")
+
 # define materials
 material_model = "MohrCoulomb3D" if ndims == 3 else "MohrCoulomb2D"
 materials = [
@@ -47,37 +69,8 @@ materials = [
         "residual_dilation": 0.0,
         "residual_cohesion": 0.0,
         "residual_pdstrain": 0.0
-    },
-    {
-        "id": 2,
-        "type": material_model,
-        "density": density,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 30,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 30,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
     }
 ]
-material_id = [0]  # material id associated with each particle group
-if len(material_id) is not num_particle_groups:
-    raise Exception("`num_particle_groups` should match len(material_id)")
-
-if random_gen is True:
-    particle_length = [0.30, 0.30]  # length of cube for x, y dir
-    particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
-    range_randomness = 0.1
-    vel_bound = [[-2, 2], [-2, 1]]
-    # error
-    if len(particle_length) and len(particle_gen_candidate_area) and len(vel_bound) is not ndims:
-        raise Exception("particle related inputs should match `ndims`")
 
 # simulation options
 analysis = {
@@ -95,7 +88,7 @@ analysis = {
         "step": 0
     },
     "velocity_update": False,
-    "nsteps": 105000,
+    "nsteps": 100000,
     "uuid": f"{simulation_case}"
 
 }
@@ -112,23 +105,25 @@ def main(_):
     if random_gen == True:
         for i, trajectory_name in enumerate(trajectory_names):
 
-            # compute cellsize_per_dim and assume it is the same for all dims
-            cellsize_per_dim = [
-                (simulation_domain[i][1] - simulation_domain[i][0]) / ncells_per_dim[i] for i in range(ndims)]
-            if not all(cellsize == cellsize_per_dim[0] for cellsize in cellsize_per_dim):
-                raise NotImplementedError("All cell size per dim should be the same")
-
             # general simulation config
             metadata[f"simulation{i}"] = {}
             metadata[f"simulation{i}"]["name"] = trajectory_name
             metadata[f"simulation{i}"]["ncells_per_dim"] = ncells_per_dim
-            metadata[f"simulation{i}"]["cellsize_perdim"] = cellsize_per_dim
             metadata[f"simulation{i}"]["outer_cell_thickness"] = outer_cell_thickness
             metadata[f"simulation{i}"]["simulation_domain"] = simulation_domain
             metadata[f"simulation{i}"]["nparticle_perdim_percell"] = nparticle_perdim_percell
             metadata[f"simulation{i}"]["particle_randomness"] = particle_randomness
             metadata[f"simulation{i}"]["k0"] = k0
             metadata[f"simulation{i}"]["wall_friction"] = wall_friction
+
+            # compute cellsize_per_dim and assume it is the same for all dims
+            cellsize_per_dim = [
+                (metadata[f"simulation{i}"]["simulation_domain"][dim][1] -
+                metadata[f"simulation{i}"]["simulation_domain"][dim][0]) /
+                metadata[f"simulation{i}"]["ncells_per_dim"][dim] for dim in range(ndims)
+            ]
+            if not all(cellsize == cellsize_per_dim[0] for cellsize in cellsize_per_dim):
+                raise NotImplementedError("All cell size per dim should be the same")
 
             # particle config for each simulation
             metadata[f"simulation{i}"]["particle"] = {}

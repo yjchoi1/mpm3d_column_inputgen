@@ -58,6 +58,7 @@ class ColumnSimulation:
         self.dims = dims
         self.post_processing = post_processing
         self.k0 = k0
+        self.outer_cell_thickness = outer_cell_thickness
 
         mesh_coord_base = []
         if outer_cell_thickness > 0:
@@ -200,7 +201,8 @@ class ColumnSimulation:
         Create dict including particle coords and index range that particle gruop belongs to
         :param particle_meta_info: dict containing,
         {"particle_domain": [[xmin, xmax], [ymin, ymax], [zmin, zmax]],
-         "initial_vel": [vel_x, vel_y, vel_z]}
+         "initial_vel": [vel_x, vel_y, vel_z]},
+         "material_id": 0
         :return:
         dict containing,
         {"particle_coords": np.array([[x0, y0, z0], [x1, y1, z1], ..., [xn, yn, zn]]),
@@ -417,12 +419,12 @@ class ColumnSimulation:
 
         # get boundaries
         if self.dims == 3:
-            x_bounds = self.simulation_domain[0]
-            y_bounds = self.simulation_domain[1]
-            z_bounds = self.simulation_domain[2]
+            x_bounds = [self.simulation_domain[0][0] - self.outer_cell_thickness, self.simulation_domain[0][1] + self.outer_cell_thickness]
+            y_bounds = [self.simulation_domain[1][0] - self.outer_cell_thickness, self.simulation_domain[1][1] + self.outer_cell_thickness]
+            z_bounds = [self.simulation_domain[2][0] - self.outer_cell_thickness, self.simulation_domain[2][1] + self.outer_cell_thickness]
         else:
-            x_bounds = self.simulation_domain[0]
-            y_bounds = self.simulation_domain[1]
+            x_bounds = [self.simulation_domain[0][0] - self.outer_cell_thickness, self.simulation_domain[0][1] + self.outer_cell_thickness]
+            y_bounds = [self.simulation_domain[1][0] - self.outer_cell_thickness, self.simulation_domain[1][1] + self.outer_cell_thickness]
 
         # node boundary entity
         if self.dims == 3:
