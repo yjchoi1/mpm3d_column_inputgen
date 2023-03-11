@@ -8,41 +8,39 @@ import box_ranges_gen
 from mpm_2dinput_utils import ColumnSimulation
 
 ndims = 2
-save_path = "sand2d_boundary"
+save_path = "/work2/08264/baagee/frontera/mpm_column_inputgen/sand2d_frictions/"
 random_gen = False
 density = 1800  # assume all material has the same density
+simulation_case = "sand2d_frictions_test"
 
 if random_gen == False:
-    simulation_case = "sand2d_configtest11"
-    input_metadata_name = "metadata-sand2d_configtest11"
-    k0 = 0.5
+    input_metadata_name = "metadata-sand2d_frictions_test4-13"
+    data_tag = [str(tag) for tag in range(4, 14)]
+    k0 = None
 
 elif random_gen == True:
-
-    # About simulation
-    simulation_case = "sand2d_configtest4-6"
     k0 = None  # for computing geostatic stress for particles. Set `None` if not considering it
-    data_tag = [str(tag) for tag in range(4, 6)]
+    data_tag = [str(tag) for tag in range(4, 14)]
     trajectory_names = [f"{simulation_case}{i}" for i in data_tag]
-    ncells_per_dim = [50, 50]  ####
-    outer_cell_thickness = 0.005
+    ncells_per_dim = [100, 100]  ####
+    outer_cell_thickness = 1.0/100/4
     simulation_domain = [[0.0, 1.0],
                          [0.0, 1.0]]
     if len(simulation_domain) is not ndims:
         raise Exception("`simulation_domain` should match `ndims`")
-    nparticle_perdim_percell = 4
+    nparticle_perdim_percell = 2
     particle_randomness = 0.8
-    wall_friction = 0.27
+    wall_friction = 0.385
     num_particle_groups = 1
     material_id = [0]  # material id associated with each particle group
     if len(material_id) is not num_particle_groups:
         raise Exception("`num_particle_groups` should match len(material_id)")
 
     # About particles
-    particle_length = [0.3, 0.3]  # length of cube for x, y dir
+    particle_length = [0.32, 0.32]  # length of cube for x, y dir
     particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
-    range_randomness = 0.1
-    vel_bound = [[-2, 2], [-2, 1.5]]
+    range_randomness = 0.25
+    vel_bound = [[0, 0], [0, 0]]
     # error
     if len(particle_length) != ndims or len(particle_gen_candidate_area) != ndims or len(vel_bound) != ndims:
         raise Exception("particle related inputs should match `ndims`")
@@ -59,13 +57,81 @@ materials = [
         "density": density,
         "youngs_modulus": 2000000.0,
         "poisson_ratio": 0.3,
-        "friction": 30,
+        "friction": 22.5,
         "dilation": 0.0,
         "cohesion": 100,
         "tension_cutoff": 50,
         "softening": False,
         "peak_pdstrain": 0.0,
-        "residual_friction": 30,
+        "residual_friction": 22.5,
+        "residual_dilation": 0.0,
+        "residual_cohesion": 0.0,
+        "residual_pdstrain": 0.0
+    },
+    {
+        "id": 1,
+        "type": material_model,
+        "density": density,
+        "youngs_modulus": 2000000.0,
+        "poisson_ratio": 0.3,
+        "friction": 32,
+        "dilation": 0.0,
+        "cohesion": 100,
+        "tension_cutoff": 50,
+        "softening": False,
+        "peak_pdstrain": 0.0,
+        "residual_friction": 32,
+        "residual_dilation": 0.0,
+        "residual_cohesion": 0.0,
+        "residual_pdstrain": 0.0
+    },
+    {
+        "id": 2,
+        "type": material_model,
+        "density": density,
+        "youngs_modulus": 2000000.0,
+        "poisson_ratio": 0.3,
+        "friction": 37.5,
+        "dilation": 0.0,
+        "cohesion": 100,
+        "tension_cutoff": 50,
+        "softening": False,
+        "peak_pdstrain": 0.0,
+        "residual_friction": 37.5,
+        "residual_dilation": 0.0,
+        "residual_cohesion": 0.0,
+        "residual_pdstrain": 0.0
+    },
+    {
+        "id": 3,
+        "type": material_model,
+        "density": density,
+        "youngs_modulus": 2000000.0,
+        "poisson_ratio": 0.3,
+        "friction": 41,
+        "dilation": 0.0,
+        "cohesion": 100,
+        "tension_cutoff": 50,
+        "softening": False,
+        "peak_pdstrain": 0.0,
+        "residual_friction": 41,
+        "residual_dilation": 0.0,
+        "residual_cohesion": 0.0,
+        "residual_pdstrain": 0.0
+    },
+    {
+        "id": 4,
+        "type": material_model,
+        "density": density,
+        "youngs_modulus": 2000000.0,
+        "poisson_ratio": 0.3,
+        "friction": 45,
+        "dilation": 0.0,
+        "cohesion": 100,
+        "tension_cutoff": 50,
+        "softening": False,
+        "peak_pdstrain": 0.0,
+        "residual_friction": 45,
         "residual_dilation": 0.0,
         "residual_cohesion": 0.0,
         "residual_pdstrain": 0.0
@@ -77,7 +143,7 @@ analysis = {
     "type": "MPMExplicit3D" if ndims == 3 else "MPMExplicit2D",
     "mpm_scheme": "usf",
     "locate_particles": False,
-    "dt": 1e-05,
+    "dt": 1e-06,
     "damping": {
         "type": "Cundall",
         "damping_factor": 0.05
@@ -88,16 +154,34 @@ analysis = {
         "step": 0
     },
     "velocity_update": False,
-    "nsteps": 100000,
+    "nsteps": 950000,
     "uuid": f"{simulation_case}"
-
 }
+
+analysis_resume = {
+    "type": "MPMExplicit3D" if ndims == 3 else "MPMExplicit2D",
+    "mpm_scheme": "usf",
+    "locate_particles": False,
+    "dt": 1e-06,
+    "damping": {
+        "type": "Cundall",
+        "damping_factor": 0.05
+    },
+    "resume": {
+        "resume": True,
+        "uuid": f"{simulation_case}",
+        "step": 0
+    },
+    "velocity_update": False,
+    "nsteps": 950000,
+    "uuid": f"{simulation_case}"
+}
+
 post_processing = {
     "path": "results/",
-    "output_steps": 250,
-    "vtk": ["stresses", "displacements"]
+    "output_steps": 2500,
+    "vtk": ["displacements"]
 }
-
 
 def main(_):
     # Create trajectory meta data
@@ -160,13 +244,22 @@ def main(_):
         f = open(f"{save_path}/{input_metadata_name}.json")
         metadata = json.load(f)
 
+        # make simulation name which is the name of the folder to save results
+        user_specified_trajectory_names = [f"{simulation_case}{i}" for i in data_tag]
+
         # save metadata individually for each sim folder
-        for sim, siminfo in metadata.items():
-            if not os.path.exists(f"{save_path}/{siminfo['name']}"):
-                os.makedirs(f"{save_path}/{siminfo['name']}")
+        for i, (sim, siminfo) in enumerate(metadata.items()):
+            if not os.path.exists(f"{save_path}/{user_specified_trajectory_names[i]}"):
+                os.makedirs(f"{save_path}/{user_specified_trajectory_names[i]}")
+            # change simulation name (which is the folder name to save results) to user specified name.
+            siminfo["name"] = user_specified_trajectory_names[i]
+            # save each simulation information to each specified result folder
             out_file = open(f"{save_path}/{siminfo['name']}/metadata.json", "w")
             json.dump(metadata[sim], out_file, indent=2)
             out_file.close()
+        # save entire metadata for all simulation in save_path
+        out_file = open(f"{save_path}/{input_metadata_name}.json", "w")
+        json.dump(metadata, out_file, indent=2)
 
     # init
     sim = ColumnSimulation(simulation_domain=metadata["simulation0"]["simulation_domain"],
@@ -177,7 +270,7 @@ def main(_):
                            wall_friction=metadata["simulation0"]["wall_friction"],
                            post_processing=post_processing,
                            dims=ndims,
-                           k0=metadata["simulation0"]["particle_randomness"])
+                           k0=metadata["simulation0"]["k0"])
 
     # gen mpm inputs
     for simulation in metadata.values():
@@ -211,7 +304,7 @@ def main(_):
             save_path=f"{save_path}/{simulation['name']}",
             material_types=materials,
             particle_info=particle_info,
-            analysis=analysis,
+            analysis=analysis_resume,
             resume=True)
 
 

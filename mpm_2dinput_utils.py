@@ -683,7 +683,10 @@ class ColumnSimulation:
         else:
             mpm_json["analysis"]["resume"]["resume"] = True
             del mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"]
-            del mpm_json["mesh"]["particles_stresses"]
+            try:
+                del mpm_json["mesh"]["particles_stresses"]
+            except:
+                pass
 
         ## Post Processing
         mpm_json["post_processing"] = self.post_processing
