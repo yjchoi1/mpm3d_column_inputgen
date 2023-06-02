@@ -7,29 +7,30 @@ import os
 import box_ranges_gen
 from mpm_2dinput_utils import ColumnSimulation
 
-ndims = 2
-save_path = "/work2/08264/baagee/frontera/mpm_column_inputgen/sand2d_frictions/"
+ndims = 3
+save_path = "/work2/08264/baagee/frontera/gns-mpm-data/mpm/sand3d/"
 random_gen = False
 density = 1800  # assume all material has the same density
-simulation_case = "sand2d_frictions_test"
+simulation_case = "sand3d_column_collapse"
 
 if random_gen == False:
-    input_metadata_name = "metadata-sand2d_frictions_test4-13"
-    data_tag = [str(tag) for tag in range(4, 14)]
+    input_metadata_name = "metadata-sand3d_column_collapse15"
+    data_tag = [str(tag) for tag in range(15, 16)]
     k0 = None
 
 elif random_gen == True:
     k0 = None  # for computing geostatic stress for particles. Set `None` if not considering it
-    data_tag = [str(tag) for tag in range(4, 14)]
+    data_tag = [str(tag) for tag in range(0, 4)]
     trajectory_names = [f"{simulation_case}{i}" for i in data_tag]
-    ncells_per_dim = [100, 100]  ####
-    outer_cell_thickness = 1.0/100/4
+    ncells_per_dim = [12, 3, 12]  ####
+    outer_cell_thickness = 1.0/12/4
     simulation_domain = [[0.0, 1.0],
+                         [-0.125, 0.125],
                          [0.0, 1.0]]
     if len(simulation_domain) is not ndims:
         raise Exception("`simulation_domain` should match `ndims`")
-    nparticle_perdim_percell = 2
-    particle_randomness = 0.8
+    nparticle_perdim_percell = 4
+    particle_randomness = 0.7
     wall_friction = 0.385
     num_particle_groups = 1
     material_id = [0]  # material id associated with each particle group
@@ -37,10 +38,10 @@ elif random_gen == True:
         raise Exception("`num_particle_groups` should match len(material_id)")
 
     # About particles
-    particle_length = [0.32, 0.32]  # length of cube for x, y dir
-    particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.7]]
-    range_randomness = 0.25
-    vel_bound = [[0, 0], [0, 0]]
+    particle_length = [0.3, 0.1, 0.3]  # length of cube for x, y dir
+    particle_gen_candidate_area = [[0.0, 1.0], [0.0, 0.25], [0.0, 1.0]]
+    range_randomness = 0.0
+    vel_bound = [[0, 0], [0, 0], [0, 0]]
     # error
     if len(particle_length) != ndims or len(particle_gen_candidate_area) != ndims or len(vel_bound) != ndims:
         raise Exception("particle related inputs should match `ndims`")
@@ -57,81 +58,13 @@ materials = [
         "density": density,
         "youngs_modulus": 2000000.0,
         "poisson_ratio": 0.3,
-        "friction": 22.5,
+        "friction": 30.0,
         "dilation": 0.0,
         "cohesion": 100,
         "tension_cutoff": 50,
         "softening": False,
         "peak_pdstrain": 0.0,
-        "residual_friction": 22.5,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
-    },
-    {
-        "id": 1,
-        "type": material_model,
-        "density": density,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 32,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 32,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
-    },
-    {
-        "id": 2,
-        "type": material_model,
-        "density": density,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 37.5,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 37.5,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
-    },
-    {
-        "id": 3,
-        "type": material_model,
-        "density": density,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 41,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 41,
-        "residual_dilation": 0.0,
-        "residual_cohesion": 0.0,
-        "residual_pdstrain": 0.0
-    },
-    {
-        "id": 4,
-        "type": material_model,
-        "density": density,
-        "youngs_modulus": 2000000.0,
-        "poisson_ratio": 0.3,
-        "friction": 45,
-        "dilation": 0.0,
-        "cohesion": 100,
-        "tension_cutoff": 50,
-        "softening": False,
-        "peak_pdstrain": 0.0,
-        "residual_friction": 45,
+        "residual_friction": 30.0,
         "residual_dilation": 0.0,
         "residual_cohesion": 0.0,
         "residual_pdstrain": 0.0

@@ -117,10 +117,16 @@ class ColumnSimulation:
         # For 3D
         else:
             # Create node coordinates
-            coords = np.array(
-                np.meshgrid(self.mesh_coord_base[0], self.mesh_coord_base[1], self.mesh_coord_base[2])
-            ).T.reshape(-1, self.dims)
-            coords = coords[:, [1, 0, 2]]
+            # coords = np.array(
+            #     np.meshgrid(self.mesh_coord_base[0], self.mesh_coord_base[1], self.mesh_coord_base[2])
+            # ).T.reshape(-1, self.dims)
+            # coords = coords[:, [1, 0, 2]]
+            coords = []
+            for z in self.mesh_coord_base[2]:
+                for y in self.mesh_coord_base[1]:
+                    for x in self.mesh_coord_base[0]:
+                        coords.append([x, y, z])
+            coords = np.array(coords)
 
             # Compute the number of nodes and elements for each dimension
             nnode_x = len(self.mesh_coord_base[0])
@@ -386,9 +392,14 @@ class ColumnSimulation:
                 ax.set_xticks(self.mesh_coord_base[0])
                 ax.set_yticks(self.mesh_coord_base[1])
                 ax.set_zticks(self.mesh_coord_base[2])
-                # ax.grid(which='major', color='#EEEEEE', linestyle=':', linewidth=0.5)
-                # ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
-                # ax.xaxis.set_minor_locator(MultipleLocator(5))
+
+                ax.set_box_aspect(
+                    aspect=(self.simulation_domain[0][1] - self.simulation_domain[0][0],
+                            self.simulation_domain[1][1] - self.simulation_domain[1][0],
+                            self.simulation_domain[2][1] - self.simulation_domain[2][0]))
+                ax.grid(which='major', color='#EEEEEE', linestyle=':', linewidth=0.5)
+                ax.grid(which='minor', color='#EEEEEE', linestyle=':', linewidth=0.5)
+                ax.xaxis.set_minor_locator(MultipleLocator(5))
                 ax.grid()
                 plt.savefig(f"{save_path}/initial_config.png")
 
