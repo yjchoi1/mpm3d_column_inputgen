@@ -7,15 +7,15 @@ import os
 import box_ranges_gen
 from mpm_2dinput_utils import ColumnSimulation
 
-ndims = 3
-save_path = "/work2/08264/baagee/frontera/gns-mpm-data/mpm/sand3d/"
+ndims = 2
+save_path = "/work2/08264/baagee/frontera/gns-mpm-data/mpm/inverse_multivar/"
 random_gen = False
 density = 1800  # assume all material has the same density
-simulation_case = "sand3d_column_collapse"
+simulation_case = "multivar"
 
 if random_gen == False:
-    input_metadata_name = "metadata-sand3d_column_collapse15"
-    data_tag = [str(tag) for tag in range(15, 16)]
+    input_metadata_name = "metadata"
+    data_tag = [str(tag) for tag in range(0, 2)]
     k0 = None
 
 elif random_gen == True:

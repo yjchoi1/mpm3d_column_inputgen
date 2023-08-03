@@ -273,26 +273,26 @@ class ColumnSimulation:
                             save_path: str):
 
         # Get entire particle coordinates for every particle groups
-        particle_coords = []
+        # particle_coords = []
         for pid, pinfo in particle_group_info.items():
             coord = pinfo["particle_coords"]
-            particle_coords.append(coord)
-        particle_coords = np.concatenate(particle_coords)
+            # particle_coords.append(coord)
 
-        # Write the number of particles
-        f = open(f"{save_path}/particles.txt", "w")
-        f.write(f"{particle_coords.shape[0]} \n")
-        f.close()
+            # Write the number of particles
+            f = open(f"{save_path}/particles_{pid}.txt", "w")
+            f.write(f"{coord.shape[0]} \n")
+            f.close()
 
-        # Write coordinates for particles
-        f = open(f"{save_path}/particles.txt", "a")
-        f.write(
-            np.array2string(
-                # particles, formatter={'float_kind':lambda lam: "%.4f" % lam}, threshold=math.inf
-                particle_coords, threshold=math.inf
-            ).replace(' [', '').replace('[', '').replace(']', '')
-        )
-        f.close()
+            # Write coordinates for particles
+            f = open(f"{save_path}/particles_{pid}.txt", "a")
+            f.write(
+                np.array2string(
+                    # particles, formatter={'float_kind':lambda lam: "%.4f" % lam}, threshold=math.inf
+                    coord, threshold=math.inf
+                ).replace(' [', '').replace('[', '').replace(']', '')
+            )
+            f.close()
+        # particle_coords = np.concatenate(particle_coords)
 
     def particle_K0_stress(self, density, particle_group_info, save_path):
 
@@ -410,8 +410,8 @@ class ColumnSimulation:
                      particle_info: dict):
 
         entity_sets = {
-            "node_sets": [],
-            "particle_sets": []
+            "node_sets": []
+            # "particle_sets": []
         }
 
         # boundary node sets
@@ -474,10 +474,11 @@ class ColumnSimulation:
         for i in range(self.dims*2):
             entity_sets["node_sets"].append({"id": i, "set": bound_node_id[i]})
 
-        # particle sets
-        for i, (group_id, pinfo) in enumerate(particle_info.items()):
-            entity_sets["particle_sets"].append(
-                {"id": i, "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
+        # # particle sets
+        # for i, (group_id, pinfo) in enumerate(particle_info.items()):
+        #     entity_sets["particle_sets"].append(
+        #         {"id": i, "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
+
         print(f"Make `entity_sets.json`at {save_path}")
         with open(f"{save_path}/entity_sets.json", "w") as f:
             json.dump(entity_sets, f, indent=2)
@@ -661,7 +662,7 @@ class ColumnSimulation:
                 {
                     "generator": {
                         "check_duplicates": True,
-                        "location": "particles.txt",
+                        "location": f"particles_group{i}.txt",
                         "io_type": "Ascii3D" if self.dims == 3 else "Ascii2D",
                         "pset_id": i,
                         "particle_type": "P3D" if self.dims == 3 else "P2D",
