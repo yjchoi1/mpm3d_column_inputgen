@@ -1,2 +1,2 @@
-- [Read Me](README)
-- [Inputs](inputs.md)
+ - [Read Me](README)
+ - [Inputs](inputs.md)
