@@ -276,7 +276,7 @@ refer to their docs for more information.
 
 # Generate input
 ```shell
-python3 gen.py --input_path="example/sand3d/inputs.json"
+python3 gen.py --input_path="examples/sand3d/inputs.json"
 ```
 
 # Run MPM

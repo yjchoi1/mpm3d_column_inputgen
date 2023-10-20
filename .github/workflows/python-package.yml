@@ -36,5 +36,5 @@ jobs:
       run: |
         pytest
     - name: Run gen.py script
-      run: python3 gen.py --input_path="example/sand3d/inputs.json"
+      run: python3 gen.py --input_path="examples/sand3d/inputs.json"
       shell: bash
