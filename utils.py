@@ -1,12 +1,13 @@
 import random
 import numpy as np
 
-def make_n_box_ranges(num_particle_groups,
-                      size,
-                      domain,
-                      size_random_level,
-                      min_interval,
-                      ):
+def make_n_box_ranges(
+        num_particle_groups,
+        size,
+        domain,
+        size_random_level,
+        min_interval,
+):
     """
     Generates n non-overlapping box ranges in the given domain.
 
@@ -36,7 +37,7 @@ def make_n_box_ranges(num_particle_groups,
     dimensions = len(domain)
     boxes = []
     attempt = 0
-    max_attempts = 100
+    max_attempts = 100000
     while len(boxes) < num_particle_groups:
         random_size = size * np.random.uniform(1 - size_random_level, 1 + size_random_level, 1)
         box = []

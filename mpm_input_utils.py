@@ -6,8 +6,6 @@ import random
 import argparse
 from matplotlib import pyplot as plt
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-import sys
-from absl import app
 
 
 # TODO: Geostatic particle stress condition
@@ -206,7 +204,7 @@ class ColumnSimulation:
         """
         Create dict including particle coords and index range that particle gruop belongs to
         :param particle_meta_info: dict containing,
-        {"particle_domain": [[xmin, xmax], [ymin, ymax], [zmin, zmax]],
+        {"particle_geometry": [[xmin, xmax], [ymin, ymax], [zmin, zmax]],
          "initial_vel": [vel_x, vel_y, vel_z]},
          "material_id": 0
         :return:
@@ -222,10 +220,10 @@ class ColumnSimulation:
         for i, (groud_id, ginfo) in enumerate(particle_meta_info.items()):
 
             # particle group x, y, z range
-            px_bound = ginfo["particle_domain"][0]
-            py_bound = ginfo["particle_domain"][1]
+            px_bound = ginfo["particle_geometry"][0]
+            py_bound = ginfo["particle_geometry"][1]
             if self.dims == 3:
-                pz_bound = ginfo["particle_domain"][2]
+                pz_bound = ginfo["particle_geometry"][2]
 
             # offset from particle gen range bound to start creating particles
             offset = self.cellsize / self.npart_perdim_percell / 2

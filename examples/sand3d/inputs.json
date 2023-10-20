@@ -1,0 +1,140 @@
+{
+  "ndims": 3,
+  "save_path": "examples/sand3d/",
+  "simulation_case": "sand3d",
+  "data_id_range": [
+    0,
+    3
+  ],
+  "k0": null,
+  "wall_friction": 0.385,
+  "gen_cube_randomly": {
+    "generate": false,
+    "sim_inputs": {
+      "mesh": {
+        "simulation_domain": [
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "ncells_per_dim": [
+          20,
+          20,
+          20
+        ],
+        "outer_cell_thickness": 0.0125
+      },
+      "particle": {
+        "nparticle_perdim_percell": 2,
+        "particle_randomness": 0.8,
+        "num_particle_groups": 2,
+        "material_id": [
+          0,
+          0
+        ],
+        "particle_gen_candidate_area": [
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "particle_length": [
+          0.30,
+          0.30,
+          0.30
+        ],
+        "range_randomness": 0.1,
+        "vel_bound": [
+          [
+            -1.5,
+            1.5
+          ],
+          [
+            -1.5,
+            1.5
+          ],
+          [
+            -1.5,
+            1.5
+          ]
+        ]
+      }
+    }
+  },
+  "gen_cube_from_data": {
+    "generate": true,
+    "metadata_path": "examples/sand3d/metadata-sand3d.json"
+  },
+  "mpm_inputs": {
+    "materials": [
+      {
+        "id": 0,
+        "density": 1800,
+        "youngs_modulus": 2000000.0,
+        "poisson_ratio": 0.3,
+        "friction": 42.0,
+        "dilation": 0.0,
+        "cohesion": 100,
+        "tension_cutoff": 50,
+        "softening": false,
+        "peak_pdstrain": 0.0,
+        "residual_friction": 42.0,
+        "residual_dilation": 0.0,
+        "residual_cohesion": 0.0,
+        "residual_pdstrain": 0.0
+      }
+    ],
+    "analysis": {
+      "mpm_scheme": "usf",
+      "locate_particles": false,
+      "dt": 1e-06,
+      "damping": {
+        "type": "Cundall",
+        "damping_factor": 0.05
+      },
+      "resume": {
+        "resume": false,
+        "step": 0
+      },
+      "velocity_update": false,
+      "nsteps": 100000
+    },
+    "analysis_resume": {
+      "mpm_scheme": "usf",
+      "locate_particles": false,
+      "dt": 1e-06,
+      "damping": {
+        "type": "Cundall",
+        "damping_factor": 0.05
+      },
+      "resume": {
+        "resume": true,
+        "step": 0
+      },
+      "velocity_update": false,
+      "nsteps": 100000
+    },
+    "post_processing": {
+      "path": "results/",
+      "output_steps": 2500,
+      "vtk": ["displacements"]
+    }
+  }
+}
