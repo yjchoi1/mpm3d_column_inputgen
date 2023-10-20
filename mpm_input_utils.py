@@ -472,11 +472,6 @@ class ColumnSimulation:
         for i in range(self.dims*2):
             entity_sets["node_sets"].append({"id": i, "set": bound_node_id[i]})
 
-        # # particle sets
-        # for i, (group_id, pinfo) in enumerate(particle_info.items()):
-        #     entity_sets["particle_sets"].append(
-        #         {"id": i, "set": np.arange(pinfo["index_range"][0], pinfo["index_range"][1] + 1).tolist()})
-
         print(f"Make `entity_sets.json`at {save_path}")
         with open(f"{save_path}/entity_sets.json", "w") as f:
             json.dump(entity_sets, f, indent=2)
@@ -644,14 +639,6 @@ class ColumnSimulation:
                         "velocity": pinfo["particle_vel"][dim]
                     }
                 )
-            # # y_vel constraints
-            # mpm_json["mesh"]["boundary_conditions"]["particles_velocity_constraints"].append(
-            #     {
-            #         "pset_id": i,
-            #         "dir": 1,
-            #         "velocity": pinfo["particle_vel"][1]
-            #     }
-            # )
 
         ## Particle info
         mpm_json["particles"] = []
