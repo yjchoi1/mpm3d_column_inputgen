@@ -9,7 +9,7 @@
   "k0": null,
   "wall_friction": 0.385,
   "gen_cube_randomly": {
-    "generate": false,
+    "generate": true,
     "sim_inputs": {
       "mesh": {
         "simulation_domain": [
@@ -79,7 +79,7 @@
     }
   },
   "gen_cube_from_data": {
-    "generate": true,
+    "generate": false,
     "metadata_path": "examples/sand3d/metadata-sand3d.json"
   },
   "mpm_inputs": {
